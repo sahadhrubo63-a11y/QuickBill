@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business POS & Inventory Pro Suite</title>
+    <title>QuickBill</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Inter Font -->
@@ -20,7 +20,7 @@
         <!-- LOGIN CARD -->
         <div id="login-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 transition-all">
             <div class="text-center mb-8">
-                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">POS PRO v4.2</span>
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">QuickBIll v11.24</span>
                 <h2 class="text-3xl font-bold text-slate-900 mt-2">Sign In</h2>
                 <p class="text-sm text-slate-500 mt-1">Access your business dashboard</p>
             </div>
@@ -96,7 +96,7 @@
 
             <nav class="flex-grow p-4 space-y-1">
                 <button onclick="POSApp.switchTab('tab-pos')" id="btn-tab-pos" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium bg-indigo-600 text-white transition">
-                    <span>🛒</span> <span>Point of Sale (POS)</span>
+                    <span>🛒</span> <span>Point of Sale</span>
                 </button>
                 <button onclick="POSApp.switchTab('tab-inventory')" id="btn-tab-inventory" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition">
                     <span>📦</span> <span>Inventory Management</span>
@@ -123,8 +123,7 @@
                 <div id="tab-pos" class="tab-content space-y-6">
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <div>
-                            <h1 class="text-2xl font-bold text-slate-900">Point of Sale (POS)</h1>
-                            <p class="text-sm text-slate-500">Scan Barcode or select manually to instantly create e-bills</p>
+                            <h1 class="text-2xl font-bold text-slate-900">Billing Home</h1>
                         </div>
                         <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2">
                             <span class="relative flex h-2 w-2">
@@ -309,8 +308,8 @@
                 <div id="tab-statement" class="tab-content hidden space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h1 class="text-2xl font-bold text-slate-900">Financial Ledger</h1>
-                            <p class="text-sm text-slate-500">View performance parameters and download system audits</p>
+                            <h1 class="text-2xl font-bold text-slate-900">Accounts Home</h1>
+                           
                         </div>
                         <button onclick="POSApp.handleDownloadCSV()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition flex items-center space-x-2 interactive-hover">
                             <span>📥</span> <span>Download CSV Statement</span>
@@ -351,8 +350,8 @@
                 <!-- PROFILE TAB -->
                 <div id="tab-profile" class="tab-content hidden space-y-6">
                     <div>
-                        <h1 class="text-2xl font-bold text-slate-900">Profile & Outlet Settings</h1>
-                        <p class="text-sm text-slate-500">Configure your store metadata, Helpline parameters, and Profile Avatar/Shop Logo</p>
+                        <h1 class="text-2xl font-bold text-slate-900">My Profile</h1>
+                       
                     </div>
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-2xl space-y-4">
                         <div class="flex items-center space-x-4">
@@ -380,7 +379,7 @@
             </div>
 
             <footer class="mt-12 py-4 text-center text-xs text-slate-400 font-medium border-t border-slate-100 no-print">
-                All copy reserved by BuildFace Innovation
+                All copy reserved by BuildFace Innovation & Engineering
             </footer>
         </main>
     </div>
