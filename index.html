@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QuickBill</title>
+    <title>Business POS & Inventory Pro Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Inter Font -->
@@ -20,7 +20,7 @@
         <!-- LOGIN CARD -->
         <div id="login-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 transition-all">
             <div class="text-center mb-8">
-                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">QuickBIll v11.24</span>
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">POS PRO v4.2</span>
                 <h2 class="text-3xl font-bold text-slate-900 mt-2">Sign In</h2>
                 <p class="text-sm text-slate-500 mt-1">Access your business dashboard</p>
             </div>
@@ -96,7 +96,7 @@
 
             <nav class="flex-grow p-4 space-y-1">
                 <button onclick="POSApp.switchTab('tab-pos')" id="btn-tab-pos" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium bg-indigo-600 text-white transition">
-                    <span>🛒</span> <span>Point of Sale</span>
+                    <span>🛒</span> <span>Point of Sale (POS)</span>
                 </button>
                 <button onclick="POSApp.switchTab('tab-inventory')" id="btn-tab-inventory" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition">
                     <span>📦</span> <span>Inventory Management</span>
@@ -117,13 +117,26 @@
 
         <!-- MAIN WORKSPACE -->
         <main class="flex-grow p-6 md:p-8 overflow-y-auto no-print flex flex-col justify-between">
-            <div class="flex-grow">
+            <div class="flex-grow space-y-6">
                 
+                <!-- LOW STOCK TOP ALERT BANNER -->
+                <div id="low-stock-alert-banner" class="hidden bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl flex items-center justify-between shadow-sm transition-all">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-rose-100 rounded-lg text-rose-600 font-bold text-lg">⚠️</div>
+                        <div>
+                            <h4 class="font-bold text-sm">Low Stock Alert Detected!</h4>
+                            <p class="text-xs text-rose-600 mt-0.5" id="low-stock-alert-message">Several items are running low in inventory.</p>
+                        </div>
+                    </div>
+                    <button onclick="POSApp.switchTab('tab-inventory')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-rose-700 transition">Review Inventory</button>
+                </div>
+
                 <!-- POS TAB -->
                 <div id="tab-pos" class="tab-content space-y-6">
                     <div class="flex justify-between items-center flex-wrap gap-2">
                         <div>
-                            <h1 class="text-2xl font-bold text-slate-900">Billing Home</h1>
+                            <h1 class="text-2xl font-bold text-slate-900">Point of Sale (POS)</h1>
+                            <p class="text-sm text-slate-500">Scan Barcode or select manually to instantly create e-bills</p>
                         </div>
                         <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2">
                             <span class="relative flex h-2 w-2">
@@ -196,9 +209,8 @@
                                         <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label>
                                         <select id="bill-pay-method" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                             <option value="Cash">Cash</option>
-                                            <option value="Online Pay">Online Pay (Card)</option>
-                                             <option value="Online Pay">Online Pay (Bkash)</option>
-                                              <option value="Online Pay">Online Pay (Nagad)</option>
+                                            <option value="Card">Card</option>
+                                            <option value="Online Pay">Online Pay</option>
                                         </select>
                                     </div>
                                     <div>
@@ -230,7 +242,7 @@
                 <div id="tab-inventory" class="tab-content hidden space-y-6">
                     <div>
                         <h1 class="text-2xl font-bold text-slate-900">Inventory Stock Room</h1>
-                      
+                        <p class="text-sm text-slate-500">Manage products, custom SKUs, and download generated barcodes</p>
                     </div>
 
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
@@ -255,6 +267,10 @@
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Stock Quantity</label>
                                 <input type="number" step="any" id="inv-qty" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Qty">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Min Stock Alert Limit</label>
+                                <input type="number" id="inv-min-stock" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" value="5" placeholder="e.g. 5">
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-slate-600 mb-1">Buying Price (TK)</label>
@@ -310,8 +326,8 @@
                 <div id="tab-statement" class="tab-content hidden space-y-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
-                            <h1 class="text-2xl font-bold text-slate-900">Accounts Home</h1>
-                           
+                            <h1 class="text-2xl font-bold text-slate-900">Financial Ledger</h1>
+                            <p class="text-sm text-slate-500">View performance parameters and download system audits</p>
                         </div>
                         <button onclick="POSApp.handleDownloadCSV()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition flex items-center space-x-2 interactive-hover">
                             <span>📥</span> <span>Download CSV Statement</span>
@@ -352,8 +368,8 @@
                 <!-- PROFILE TAB -->
                 <div id="tab-profile" class="tab-content hidden space-y-6">
                     <div>
-                        <h1 class="text-2xl font-bold text-slate-900">My Profile</h1>
-                       
+                        <h1 class="text-2xl font-bold text-slate-900">Profile & Outlet Settings</h1>
+                        <p class="text-sm text-slate-500">Configure your store metadata, Helpline parameters, and Profile Avatar/Shop Logo</p>
                     </div>
                     <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-2xl space-y-4">
                         <div class="flex items-center space-x-4">
@@ -381,7 +397,7 @@
             </div>
 
             <footer class="mt-12 py-4 text-center text-xs text-slate-400 font-medium border-t border-slate-100 no-print">
-                All copy reserved by BuildFace Innovation & Engineering
+                All copy reserved by BuildFace Innovation
             </footer>
         </main>
     </div>
@@ -412,15 +428,14 @@
         <div class="text-[11px] text-right space-y-0.5 mb-3 text-black">
             <div id="bill-total-price"></div>
             <p class="mt-1">Payment Mode: <span id="bill-payment-type" class="font-semibold">Cash</span></p>
-            <p class="mt-1">Payment Mode: <span id="bill-payment-type" class="font-semibold">Bkash</span></p>
             <p>Amount Paid: <span id="bill-paid-price" class="font-semibold">0.00</span> TK</p>
             <p class="border-t border-dotted border-black pt-0.5">Balance Due: <span id="bill-due-price" class="font-bold">0.00</span> TK</p>
         </div>
         <div class="text-center text-[10px] border-t border-slate-300 pt-1.5 text-slate-700 space-y-0.5">
-            <p class="font-semibold">Thank you & Come Again !</p>
+            <p class="font-semibold">Thank you for your business!</p>
             <p id="bill-shop-helpline"></p>
             <div class="text-[9px] text-slate-500 font-bold tracking-wider pt-1 border-t border-dotted mt-1">
-                Powered by BuildFace Innovation & Engineering
+                Powered by BuildFace Innovation
             </div>
         </div>
         <div class="text-center text-xs mt-4 no-print flex justify-center space-x-2">
