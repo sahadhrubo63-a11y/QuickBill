@@ -1,0 +1,45 @@
+:root {
+    --brand-primary: #4f46e5;
+    --brand-success: #10b981;
+}
+
+body { 
+    font-family: 'Inter', sans-serif; 
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Optimized Print Engine Styles */
+@media print {
+    body * { visibility: hidden; }
+    #print-area, #print-area * { visibility: visible; }
+    #print-area { 
+        position: absolute; 
+        left: 0; 
+        top: 0; 
+        width: 78mm; 
+        padding: 4px; 
+        background: #ffffff;
+        color: #000000;
+    }
+    .no-print { display: none !important; }
+}
+
+/* Custom Scrollbar Styles */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Modern UI Glass/Shadow FX */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+}
+
+.interactive-hover {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.interactive-hover:hover {
+    transform: translateY(-1px);
+}
