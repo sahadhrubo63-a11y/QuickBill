@@ -1,5 +1,5 @@
 /**
- * Enterprise POS Engine Namespace with Low Stock Alerts & Payment Modes
+ * Enterprise POS Engine Namespace with Low Stock Alerts, Payment Modes & Document Management
  */
 const POSApp = (function() {
     let activeUser = null;
@@ -91,7 +91,7 @@ const POSApp = (function() {
 
             dbUsers[username] = {
                 username, password, company, category, inventory: [], statements: [],
-                address: "", helpline: "", dp: ""
+                address: "", helpline: "", dp: "", documents: []
             };
             saveToLocalStorage();
             alert('Registration complete! Please login.');
@@ -129,6 +129,11 @@ const POSApp = (function() {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
             const userData = dbUsers[activeUser];
+
+            if (!userData.documents) {
+                userData.documents = [];
+            }
+
             document.getElementById('app-company-name').innerText = userData.company;
             document.getElementById('app-username').innerText = `User: ${userData.username}`;
             
@@ -152,6 +157,7 @@ const POSApp = (function() {
             this.switchTab('tab-pos');
             this.renderInventory();
             this.renderStatements();
+            this.renderBusinessDocuments();
         },
 
         switchTab: function(tabId) {
@@ -182,6 +188,103 @@ const POSApp = (function() {
             saveToLocalStorage();
             alert('Profile Settings successfully operationalized!');
             this.loadApplication();
+        },
+
+        /* BUSINESS DOCUMENTS MANAGEMENT FUNCTIONS */
+        uploadBusinessDocument: function() {
+            const titleInput = document.getElementById('doc-title');
+            const fileInput = document.getElementById('doc-file-input');
+            const title = titleInput.value.trim();
+            const file = fileInput.files[0];
+
+            if (!title || !file) {
+                alert('Please provide a document title and select a file (JPG or PDF)!');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const base64Data = e.target.result;
+                if (!dbUsers[activeUser].documents) {
+                    dbUsers[activeUser].documents = [];
+                }
+                dbUsers[activeUser].documents.push({
+                    title: title,
+                    fileData: base64Data,
+                    fileType: file.type,
+                    fileName: file.name
+                });
+                saveToLocalStorage();
+                this.renderBusinessDocuments();
+                
+                titleInput.value = '';
+                fileInput.value = '';
+                alert('Document successfully uploaded and saved!');
+            };
+            reader.readAsDataURL(file);
+        },
+
+        renderBusinessDocuments: function() {
+            const docs = dbUsers[activeUser].documents || [];
+            const tbody = document.getElementById('business-docs-table-body');
+            tbody.innerHTML = '';
+
+            docs.forEach((doc, index) => {
+                tbody.innerHTML += `
+                    <tr class="text-sm">
+                        <td class="p-3 font-medium text-slate-700">${escapeHTML(doc.title)}</td>
+                        <td class="p-3 text-xs text-slate-500 uppercase">${doc.fileType.includes('pdf') ? 'PDF Document' : 'JPG/Image'}</td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick="POSApp.viewDocument(${index})" class="text-indigo-600 font-semibold hover:underline text-xs">👁 View</button>
+                            <button onclick="POSApp.downloadDocument(${index})" class="text-emerald-600 font-semibold hover:underline text-xs">📥 Download</button>
+                            <button onclick="POSApp.deleteDocument(${index})" class="text-red-500 font-semibold hover:underline text-xs">Delete</button>
+                        </td>
+                    </tr>`;
+            });
+
+            if (docs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">No documents uploaded yet.</td></tr>`;
+            }
+        },
+
+        viewDocument: function(index) {
+            const doc = dbUsers[activeUser].documents[index];
+            if (!doc) return;
+
+            document.getElementById('modal-doc-title').innerText = doc.title;
+            const contentDiv = document.getElementById('modal-doc-content');
+            contentDiv.innerHTML = '';
+
+            if (doc.fileType.includes('pdf')) {
+                contentDiv.innerHTML = `<iframe src="${doc.fileData}" class="w-full h-[60vh] border rounded"></iframe>`;
+            } else {
+                contentDiv.innerHTML = `<img src="${doc.fileData}" class="max-w-full h-auto rounded object-contain" alt="${escapeHTML(doc.title)}">`;
+            }
+            document.getElementById('doc-modal').classList.remove('hidden');
+        },
+
+        closeDocModal: function() {
+            document.getElementById('doc-modal').classList.add('hidden');
+        },
+
+        downloadDocument: function(index) {
+            const doc = dbUsers[activeUser].documents[index];
+            if (!doc) return;
+
+            const a = document.createElement('a');
+            a.href = doc.fileData;
+            a.download = doc.fileName || `Business_Doc_${index + 1}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        },
+
+        deleteDocument: function(index) {
+            if (confirm('Are you sure you want to delete this document?')) {
+                dbUsers[activeUser].documents.splice(index, 1);
+                saveToLocalStorage();
+                this.renderBusinessDocuments();
+            }
         },
 
         updatePOSUnitDisplay: function() {
