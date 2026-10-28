@@ -1,19 +1,16 @@
 /**
- * Enterprise POS Engine Namespace
+ * Enterprise POS Engine Namespace with Low Stock Alerts & Payment Modes
  */
 const POSApp = (function() {
-    // Private State Storage
     let activeUser = null;
     let dbUsers = JSON.parse(localStorage.getItem('pos_users')) || {};
     let captchaCode = '';
     let cart = [];
     let tempProfileDpBase64 = "";
 
-    // Hardware Barcode Scan Buffer State
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
 
-    // Utility: Escape HTML to prevent XSS Security Issues
     function escapeHTML(str) {
         if (!str) return '';
         return String(str)
@@ -28,7 +25,6 @@ const POSApp = (function() {
         localStorage.setItem('pos_users', JSON.stringify(dbUsers));
     }
 
-    // Audio Feedback Engine
     function playBeepSound() {
         try {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -350,11 +346,24 @@ const POSApp = (function() {
             select.innerHTML = '<option value="">Select Product Manually</option>';
 
             items.forEach((item, index) => {
+                const threshold = item.minStock || 5;
+                const isLowStock = item.qty <= threshold;
+
                 select.innerHTML += `<option value="${index}">${escapeHTML(item.name)} (${item.qty} ${escapeHTML(item.unit)})</option>`;
+                
                 tbody.innerHTML += `
-                    <tr class="text-sm">
-                        <td class="p-4"><strong>${escapeHTML(item.name)}</strong><br><span class="text-xs text-slate-400 font-mono">SKU: ${escapeHTML(item.barcode)}</span></td>
-                        <td class="p-4">${item.qty} ${escapeHTML(item.unit)}</td>
+                    <tr class="text-sm ${isLowStock ? 'bg-rose-50/50' : ''}">
+                        <td class="p-4">
+                            <strong>${escapeHTML(item.name)}</strong>
+                            <br><span class="text-xs text-slate-400 font-mono">SKU: ${escapeHTML(item.barcode)}</span>
+                            ${isLowStock ? '<span class="ml-2 bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded text-[10px]">LOW STOCK</span>' : ''}
+                        </td>
+                        <td class="p-4">
+                            <span class="${isLowStock ? 'text-rose-600 font-bold' : 'text-slate-700'}">
+                                ${item.qty} ${escapeHTML(item.unit)}
+                            </span>
+                            <span class="text-[10px] text-slate-400 block">Min: ${threshold}</span>
+                        </td>
                         <td class="p-4">${item.buy.toFixed(2)} TK</td>
                         <td class="p-4 font-semibold text-indigo-600">${item.sell.toFixed(2)} TK</td>
                         <td class="p-4 text-red-500">-${item.discount.toFixed(2)} TK</td>
@@ -379,6 +388,26 @@ const POSApp = (function() {
             if(items.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400">No products inside the inventory database.</td></tr>`;
             }
+
+            this.checkLowStockAlerts();
+        },
+
+        checkLowStockAlerts: function() {
+            if (!activeUser || !dbUsers[activeUser]) return;
+            const items = dbUsers[activeUser].inventory || [];
+            const lowStockItems = items.filter(item => item.qty <= (item.minStock || 5));
+            const banner = document.getElementById('low-stock-alert-banner');
+            const msgElement = document.getElementById('low-stock-alert-message');
+
+            if (banner && msgElement) {
+                if (lowStockItems.length > 0) {
+                    banner.classList.remove('hidden');
+                    const itemNames = lowStockItems.map(i => `${i.name} (${i.qty} ${i.unit})`).join(', ');
+                    msgElement.innerText = `${lowStockItems.length} item(s) running low: ${itemNames}`;
+                } else {
+                    banner.classList.add('hidden');
+                }
+            }
         },
 
         deleteInventoryItem: function(index) {
@@ -399,6 +428,7 @@ const POSApp = (function() {
             const discount = parseFloat(document.getElementById('inv-discount').value) || 0;
             const vat = parseFloat(document.getElementById('inv-vat').value) || 0;
             const gift = document.getElementById('inv-gift').value.trim();
+            const minStock = parseFloat(document.getElementById('inv-min-stock').value) || 5;
 
             if (!name || isNaN(qty) || isNaN(buy) || isNaN(sell)) { 
                 alert('Fill out required fields accurately!'); 
@@ -406,7 +436,7 @@ const POSApp = (function() {
             }
             const barcode = skuInput ? skuInput : "SKU" + Math.floor(10000 + Math.random() * 90000);
 
-            dbUsers[activeUser].inventory.push({ name, qty, unit, buy, sell, discount, vat, gift, barcode });
+            dbUsers[activeUser].inventory.push({ name, qty, unit, buy, sell, discount, vat, gift, barcode, minStock });
             saveToLocalStorage();
             this.renderInventory();
             
@@ -418,6 +448,7 @@ const POSApp = (function() {
             document.getElementById('inv-discount').value = '0'; 
             document.getElementById('inv-vat').value = '0'; 
             document.getElementById('inv-gift').value = '';
+            document.getElementById('inv-min-stock').value = '5';
         },
 
         downloadBarcodeImage: function(barcodeValue) {
@@ -460,7 +491,6 @@ const POSApp = (function() {
             if (receiveStatus === 'Unpaid') paidAmount = 0;
             const dueAmount = Math.max(0, totalBill - paidAmount);
 
-            // Update Inventory
             cart.forEach(item => { 
                 if(dbUsers[activeUser].inventory[item.inventoryIndex]) {
                     dbUsers[activeUser].inventory[item.inventoryIndex].qty -= item.qty; 
@@ -474,7 +504,6 @@ const POSApp = (function() {
             dbUsers[activeUser].statements.push(newStatement);
             saveToLocalStorage();
 
-            // Print Area Setup
             const shopProfile = dbUsers[activeUser];
             document.getElementById('bill-shop-name').innerText = shopProfile.company;
             document.getElementById('bill-shop-cat').innerText = shopProfile.category || "Retail Counter";
@@ -556,7 +585,6 @@ const POSApp = (function() {
     };
 })();
 
-// Initialize App on DOM Ready
 window.addEventListener('DOMContentLoaded', () => {
     POSApp.init();
 });
