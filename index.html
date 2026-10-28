@@ -369,9 +369,9 @@
                 <div id="tab-profile" class="tab-content hidden space-y-6">
                     <div>
                         <h1 class="text-2xl font-bold text-slate-900">Profile & Outlet Settings</h1>
-                        <p class="text-sm text-slate-500">Configure your store metadata, Helpline parameters, and Profile Avatar/Shop Logo</p>
+                        <p class="text-sm text-slate-500">Configure store metadata, Helpline, Shop Logo and Upload Important Business Documents</p>
                     </div>
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-2xl space-y-4">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-3xl space-y-6">
                         <div class="flex items-center space-x-4">
                             <div class="relative">
                                 <img id="profile-preview-img" src="https://via.placeholder.com/150" class="w-24 h-24 rounded-xl object-cover border-4 border-indigo-100" alt="Preview">
@@ -391,7 +391,32 @@
                                 <input type="text" id="prof-helpline" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="e.g., +8801XXXXXXXXX">
                             </div>
                         </div>
-                        <button onclick="POSApp.saveProfileConfiguration()" class="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Save Settings</button>
+
+                        <!-- Business Documents Section -->
+                        <div class="border-t pt-5 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Business Important Documents (JPG/PDF)</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <input type="text" id="doc-title" class="border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Doc Name (e.g. Trade License)">
+                                <input type="file" id="doc-file-input" accept="image/jpeg,image/png,application/pdf" class="text-xs text-slate-500 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700">
+                                <button onclick="POSApp.uploadBusinessDocument()" class="bg-emerald-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">Upload & Save Doc</button>
+                            </div>
+                            <div class="overflow-x-auto mt-3">
+                                <table class="w-full text-left text-sm border border-slate-100 rounded-lg overflow-hidden">
+                                    <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                                        <tr>
+                                            <th class="p-3">Document Title</th>
+                                            <th class="p-3">Type</th>
+                                            <th class="p-3 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="business-docs-table-body" class="divide-y divide-slate-100">
+                                        <tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">No documents uploaded yet.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <button onclick="POSApp.saveProfileConfiguration()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Save Settings</button>
                     </div>
                 </div>
             </div>
@@ -400,6 +425,17 @@
                 All copy reserved by BuildFace Innovation
             </footer>
         </main>
+    </div>
+
+    <!-- Document Modal Preview Viewer -->
+    <div id="doc-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-4 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 id="modal-doc-title" class="font-bold text-slate-800">Document View</h3>
+                <button onclick="POSApp.closeDocModal()" class="text-slate-500 font-bold hover:text-red-500">✕ Close</button>
+            </div>
+            <div id="modal-doc-content" class="flex justify-center max-h-[70vh] overflow-auto"></div>
+        </div>
     </div>
 
     <!-- INVOICE PRINT AREA -->
