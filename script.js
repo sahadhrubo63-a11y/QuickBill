@@ -1,5 +1,5 @@
 /**
- * Enterprise POS Engine Namespace with OTP Verification, Strong Password Validation & Reset Flow
+ * Enterprise POS Engine Namespace with Real Email Services, OTP & Password Security
  */
 const POSApp = (function() {
     let activeUser = null;
@@ -7,7 +7,6 @@ const POSApp = (function() {
     let cart = [];
     let tempProfileDpBase64 = "";
 
-    // Temporary storage for OTP Verification flow
     let tempSignupData = null;
     let signupGeneratedOTP = "";
     let forgotPasswordOTP = "";
@@ -76,11 +75,7 @@ const POSApp = (function() {
 
         togglePasswordVisibility: function(inputId) {
             const input = document.getElementById(inputId);
-            if (input.type === "password") {
-                input.type = "text";
-            } else {
-                input.type = "password";
-            }
+            input.type = input.type === "password" ? "text" : "password";
         },
 
         validateStrongPassword: function(password) {
@@ -110,6 +105,35 @@ const POSApp = (function() {
             `;
         },
 
+        sendEmailJS: function(toEmail, username, password, btnId, callback) {
+            const btn = document.getElementById(btnId);
+            const oldText = btn.innerText;
+            btn.innerText = "Sending Email...";
+            btn.disabled = true;
+
+            const serviceID = "YOUR_SERVICE_ID"; // আপনার Email Services আইডি এখানে বসান
+            const templateID = "template_ucndyiy";[cite: 6]
+
+            const templateParams = {
+                to_email: toEmail,
+                username: username,
+                password: password
+            };
+
+            emailjs.send(serviceID, templateID, templateParams)
+                .then(function(response) {
+                    btn.innerText = oldText;
+                    btn.disabled = false;
+                    callback(true);
+                }, function(error) {
+                    btn.innerText = oldText;
+                    btn.disabled = false;
+                    console.error("FAILED...", error);
+                    alert("Email sending failed. Please check network/EmailJS keys.");
+                    callback(false);
+                });
+        },
+
         /* SIGNUP & OTP FLOW */
         initiateSignupOTP: function() {
             const company = document.getElementById('reg-company').value.trim();
@@ -134,28 +158,23 @@ const POSApp = (function() {
                 return;
             }
 
-            // Check if email already exists
-            const emailExists = Object.values(dbUsers).some(u => u.email === email);
-            if (emailExists) {
-                alert('An account with this email address already exists!');
-                return;
-            }
-
             tempSignupData = { company, email, category, username, password };
             signupGeneratedOTP = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Simulate Email Inbox Transmission
-            alert(`[EMAIL INBOX SIMULATION]\n\nAn OTP has been sent to ${email}.\nYour Verification Code is: ${signupGeneratedOTP}`);
-
-            document.getElementById('otp-sent-email-display').innerText = email;
-            document.getElementById('signup-form-step1').classList.add('hidden');
-            document.getElementById('signup-form-step2').classList.remove('hidden');
+            // এখানে সিক্রেট ওটিপি ইউজারকে মেইলে পাঠানো হচ্ছে (যাতে ইউজার ইনবক্সে কোড পায়)
+            this.sendEmailJS(email, `OTP: ${signupGeneratedOTP}`, password, 'btn-send-otp', (success) => {
+                if (success) {
+                    document.getElementById('otp-sent-email-display').innerText = email;
+                    document.getElementById('signup-form-step1').classList.add('hidden');
+                    document.getElementById('signup-form-step2').classList.remove('hidden');
+                }
+            });
         },
 
         verifySignupOTP: function() {
             const enteredOTP = document.getElementById('reg-otp-input').value.trim();
             if (enteredOTP !== signupGeneratedOTP) {
-                alert('Invalid OTP code! Please check your inbox and try again.');
+                alert('Invalid OTP code! Please check your email inbox.');
                 return;
             }
 
@@ -166,13 +185,13 @@ const POSApp = (function() {
             };
 
             saveToLocalStorage();
-            alert('Email verified successfully! Your account is created. Please Login.');
+            alert('Email verified successfully! Account created.');
             tempSignupData = null;
             signupGeneratedOTP = "";
             this.showAuthScreen('login-card');
         },
 
-        /* FORGOT PASSWORD & RESET FLOW */
+        /* FORGOT PASSWORD FLOW */
         sendForgotOTP: function() {
             const email = document.getElementById('forgot-email').value.trim().toLowerCase();
             const userEntry = Object.values(dbUsers).find(u => u.email === email);
@@ -185,12 +204,13 @@ const POSApp = (function() {
             forgotEmailAccount = email;
             forgotPasswordOTP = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Simulate Email Inbox Transmission
-            alert(`[EMAIL INBOX SIMULATION]\n\nPassword recovery requested for ${email}.\nYour Password Reset OTP is: ${forgotPasswordOTP}`);
-
-            document.getElementById('forgot-email-display').innerText = email;
-            document.getElementById('forgot-form-step1').classList.add('hidden');
-            document.getElementById('forgot-form-step2').classList.remove('hidden');
+            this.sendEmailJS(email, `Reset OTP: ${forgotPasswordOTP}`, userEntry.password, 'btn-send-forgot-otp', (success) => {
+                if (success) {
+                    document.getElementById('forgot-email-display').innerText = email;
+                    document.getElementById('forgot-form-step1').classList.add('hidden');
+                    document.getElementById('forgot-form-step2').classList.remove('hidden');
+                }
+            });
         },
 
         resetPassword: function() {
@@ -198,24 +218,21 @@ const POSApp = (function() {
             const newPassword = document.getElementById('forgot-new-password').value;
 
             if (enteredOTP !== forgotPasswordOTP) {
-                alert('Invalid Reset OTP code!');
+                alert('Invalid OTP code!');
                 return;
             }
 
             const pwdValidation = this.validateStrongPassword(newPassword);
             if (!pwdValidation.valid) {
-                alert('New password does not meet required criteria!');
+                alert('New password does not meet criteria!');
                 return;
             }
 
-            // Find user username associated with the verified email
             const username = Object.keys(dbUsers).find(key => dbUsers[key].email === forgotEmailAccount);
             if (username && dbUsers[username]) {
                 dbUsers[username].password = newPassword;
                 saveToLocalStorage();
-                alert('Password reset successful! You can now login with your new password.');
-                forgotPasswordOTP = "";
-                forgotEmailAccount = "";
+                alert('Password reset successful! Please login with your new password.');
                 this.showAuthScreen('login-card');
             }
         },
@@ -224,7 +241,6 @@ const POSApp = (function() {
             const userOrEmail = document.getElementById('login-username').value.trim().toLowerCase();
             const pass = document.getElementById('login-password').value;
 
-            // Allow login by Username OR Email
             const usernameKey = Object.keys(dbUsers).find(u => u.toLowerCase() === userOrEmail || (dbUsers[u].email && dbUsers[u].email.toLowerCase() === userOrEmail));
 
             if (usernameKey && dbUsers[usernameKey].password === pass) {
