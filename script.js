@@ -1,12 +1,17 @@
 /**
- * Enterprise POS Engine Namespace with Low Stock Alerts, Payment Modes & Document Management
+ * Enterprise POS Engine Namespace with OTP Verification, Strong Password Validation & Reset Flow
  */
 const POSApp = (function() {
     let activeUser = null;
     let dbUsers = JSON.parse(localStorage.getItem('pos_users')) || {};
-    let captchaCode = '';
     let cart = [];
     let tempProfileDpBase64 = "";
+
+    // Temporary storage for OTP Verification flow
+    let tempSignupData = null;
+    let signupGeneratedOTP = "";
+    let forgotPasswordOTP = "";
+    let forgotEmailAccount = "";
 
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
@@ -50,63 +55,184 @@ const POSApp = (function() {
 
     return {
         init: function() {
-            this.generateCaptcha();
             this.checkAutoLogin();
             this.initBarcodeScannerListener();
         },
 
-        toggleAuth: function(showLogin) {
-            document.getElementById('login-card').classList.toggle('hidden', !showLogin);
-            document.getElementById('signup-card').classList.toggle('hidden', showLogin);
-            if (!showLogin) this.generateCaptcha();
+        showAuthScreen: function(screenId) {
+            document.getElementById('login-card').classList.add('hidden');
+            document.getElementById('signup-card').classList.add('hidden');
+            document.getElementById('forgot-card').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+
+            if(screenId === 'signup-card') {
+                document.getElementById('signup-form-step1').classList.remove('hidden');
+                document.getElementById('signup-form-step2').classList.add('hidden');
+            } else if(screenId === 'forgot-card') {
+                document.getElementById('forgot-form-step1').classList.remove('hidden');
+                document.getElementById('forgot-form-step2').classList.add('hidden');
+            }
         },
 
-        generateCaptcha: function() {
-            const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            captchaCode = '';
-            for (let i = 0; i < 4; i++) captchaCode += chars[Math.floor(Math.random() * chars.length)];
-            document.getElementById('captcha-display').innerText = captchaCode;
+        togglePasswordVisibility: function(inputId) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+            } else {
+                input.type = "password";
+            }
         },
 
-        handleSignup: function() {
+        validateStrongPassword: function(password) {
+            const minLength = 8;
+            const hasUpperCase = /[A-Z]/.test(password);
+            const hasLowerCase = /[a-z]/.test(password);
+            const hasNumbers = /\d/.test(password);
+            const hasSymbol = /[\W_]/.test(password);
+
+            return {
+                valid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSymbol,
+                minLength, hasUpperCase, hasLowerCase, hasNumbers, hasSymbol
+            };
+        },
+
+        checkPasswordStrength: function(inputId, indicatorId) {
+            const password = document.getElementById(inputId).value;
+            const res = this.validateStrongPassword(password);
+            const ind = document.getElementById(indicatorId);
+
+            ind.innerHTML = `
+                <div class="${res.hasUpperCase ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Uppercase letter (A-Z)</div>
+                <div class="${res.hasLowerCase ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Lowercase letter (a-z)</div>
+                <div class="${res.hasNumbers ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Number (0-9)</div>
+                <div class="${res.hasSymbol ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Special Symbol (@, #, $, etc.)</div>
+                <div class="${res.minLength ? 'text-emerald-600' : 'text-slate-400'}">✓ Minimum 8 characters</div>
+            `;
+        },
+
+        /* SIGNUP & OTP FLOW */
+        initiateSignupOTP: function() {
             const company = document.getElementById('reg-company').value.trim();
+            const email = document.getElementById('reg-email').value.trim().toLowerCase();
             const category = document.getElementById('reg-category').value.trim();
             const username = document.getElementById('reg-username').value.trim();
-            const password = document.getElementById('reg-password').value.trim();
-            const captchaInput = document.getElementById('captcha-input').value.trim().toUpperCase();
+            const password = document.getElementById('reg-password').value;
 
-            if (!company || !username || !password) { 
-                alert('Required fields cannot be left blank!'); 
-                return; 
-            }
-            if (captchaInput !== captchaCode) { 
-                alert('Captcha validation failed!'); 
-                this.generateCaptcha(); 
-                return; 
-            }
-            if (dbUsers[username]) { 
-                alert('Account profile already exists.'); 
-                return; 
+            if (!company || !email || !username || !password) {
+                alert('All required fields must be completed!');
+                return;
             }
 
+            const pwdValidation = this.validateStrongPassword(password);
+            if (!pwdValidation.valid) {
+                alert('Password does not meet required security criteria!');
+                return;
+            }
+
+            if (dbUsers[username]) {
+                alert('Username is already taken!');
+                return;
+            }
+
+            // Check if email already exists
+            const emailExists = Object.values(dbUsers).some(u => u.email === email);
+            if (emailExists) {
+                alert('An account with this email address already exists!');
+                return;
+            }
+
+            tempSignupData = { company, email, category, username, password };
+            signupGeneratedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+            // Simulate Email Inbox Transmission
+            alert(`[EMAIL INBOX SIMULATION]\n\nAn OTP has been sent to ${email}.\nYour Verification Code is: ${signupGeneratedOTP}`);
+
+            document.getElementById('otp-sent-email-display').innerText = email;
+            document.getElementById('signup-form-step1').classList.add('hidden');
+            document.getElementById('signup-form-step2').classList.remove('hidden');
+        },
+
+        verifySignupOTP: function() {
+            const enteredOTP = document.getElementById('reg-otp-input').value.trim();
+            if (enteredOTP !== signupGeneratedOTP) {
+                alert('Invalid OTP code! Please check your inbox and try again.');
+                return;
+            }
+
+            const { username, password, company, category, email } = tempSignupData;
             dbUsers[username] = {
-                username, password, company, category, inventory: [], statements: [],
+                username, email, password, company, category, inventory: [], statements: [],
                 address: "", helpline: "", dp: "", documents: []
             };
+
             saveToLocalStorage();
-            alert('Registration complete! Please login.');
-            this.toggleAuth(true);
+            alert('Email verified successfully! Your account is created. Please Login.');
+            tempSignupData = null;
+            signupGeneratedOTP = "";
+            this.showAuthScreen('login-card');
+        },
+
+        /* FORGOT PASSWORD & RESET FLOW */
+        sendForgotOTP: function() {
+            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+            const userEntry = Object.values(dbUsers).find(u => u.email === email);
+
+            if (!userEntry) {
+                alert('No registered account found with this email address!');
+                return;
+            }
+
+            forgotEmailAccount = email;
+            forgotPasswordOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+            // Simulate Email Inbox Transmission
+            alert(`[EMAIL INBOX SIMULATION]\n\nPassword recovery requested for ${email}.\nYour Password Reset OTP is: ${forgotPasswordOTP}`);
+
+            document.getElementById('forgot-email-display').innerText = email;
+            document.getElementById('forgot-form-step1').classList.add('hidden');
+            document.getElementById('forgot-form-step2').classList.remove('hidden');
+        },
+
+        resetPassword: function() {
+            const enteredOTP = document.getElementById('forgot-otp-input').value.trim();
+            const newPassword = document.getElementById('forgot-new-password').value;
+
+            if (enteredOTP !== forgotPasswordOTP) {
+                alert('Invalid Reset OTP code!');
+                return;
+            }
+
+            const pwdValidation = this.validateStrongPassword(newPassword);
+            if (!pwdValidation.valid) {
+                alert('New password does not meet required criteria!');
+                return;
+            }
+
+            // Find user username associated with the verified email
+            const username = Object.keys(dbUsers).find(key => dbUsers[key].email === forgotEmailAccount);
+            if (username && dbUsers[username]) {
+                dbUsers[username].password = newPassword;
+                saveToLocalStorage();
+                alert('Password reset successful! You can now login with your new password.');
+                forgotPasswordOTP = "";
+                forgotEmailAccount = "";
+                this.showAuthScreen('login-card');
+            }
         },
 
         handleLogin: function() {
-            const user = document.getElementById('login-username').value.trim();
-            const pass = document.getElementById('login-password').value.trim();
-            if (dbUsers[user] && dbUsers[user].password === pass) {
-                activeUser = user;
-                localStorage.setItem('pos_active_user', user);
+            const userOrEmail = document.getElementById('login-username').value.trim().toLowerCase();
+            const pass = document.getElementById('login-password').value;
+
+            // Allow login by Username OR Email
+            const usernameKey = Object.keys(dbUsers).find(u => u.toLowerCase() === userOrEmail || (dbUsers[u].email && dbUsers[u].email.toLowerCase() === userOrEmail));
+
+            if (usernameKey && dbUsers[usernameKey].password === pass) {
+                activeUser = usernameKey;
+                localStorage.setItem('pos_active_user', activeUser);
                 this.loadApplication();
             } else { 
-                alert('Authentication credentials rejected!'); 
+                alert('Invalid authentication credentials!'); 
             }
         },
 
@@ -123,6 +249,7 @@ const POSApp = (function() {
             localStorage.removeItem('pos_active_user');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('auth-container').classList.remove('hidden');
+            this.showAuthScreen('login-card');
         },
 
         loadApplication: function() {
@@ -186,11 +313,11 @@ const POSApp = (function() {
                 dbUsers[activeUser].dp = tempProfileDpBase64; 
             }
             saveToLocalStorage();
-            alert('Profile Settings successfully operationalized!');
+            alert('Profile Settings successfully updated!');
             this.loadApplication();
         },
 
-        /* BUSINESS DOCUMENTS MANAGEMENT FUNCTIONS */
+        /* BUSINESS DOCUMENTS MANAGEMENT */
         uploadBusinessDocument: function() {
             const titleInput = document.getElementById('doc-title');
             const fileInput = document.getElementById('doc-file-input');
@@ -287,6 +414,7 @@ const POSApp = (function() {
             }
         },
 
+        /* POS CORE LOGIC */
         updatePOSUnitDisplay: function() {
             const select = document.getElementById('bill-product-select');
             const badge = document.getElementById('pos-unit-badge');
@@ -365,7 +493,7 @@ const POSApp = (function() {
             const self = this;
             window.addEventListener('keydown', function(e) {
                 if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-                    if (document.activeElement.id === 'captcha-input') return;
+                    if (document.activeElement.id === 'reg-otp-input' || document.activeElement.id === 'forgot-otp-input') return;
                 }
 
                 const currentTime = Date.now();
