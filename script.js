@@ -1,5 +1,5 @@
 /**
- * Enterprise POS Engine Namespace with Real Email Services, OTP & Password Security
+ * Enterprise POS Engine Namespace with EmailJS Integration & Real Credentials Dispatch
  */
 const POSApp = (function() {
     let activeUser = null;
@@ -111,8 +111,8 @@ const POSApp = (function() {
             btn.innerText = "Sending Email...";
             btn.disabled = true;
 
-            const serviceID = "YOUR_SERVICE_ID"; // আপনার Email Services আইডি এখানে বসান
-            const templateID = "template_ucndyiy";[cite: 6]
+            const serviceID = "service_e466jkh";[cite: 9]
+            const templateID = "template_ucndyiy";[cite: 10]
 
             const templateParams = {
                 to_email: toEmail,
@@ -129,7 +129,7 @@ const POSApp = (function() {
                     btn.innerText = oldText;
                     btn.disabled = false;
                     console.error("FAILED...", error);
-                    alert("Email sending failed. Please check network/EmailJS keys.");
+                    alert("Email sending failed. Please check network/EmailJS configuration.");
                     callback(false);
                 });
         },
@@ -149,7 +149,7 @@ const POSApp = (function() {
 
             const pwdValidation = this.validateStrongPassword(password);
             if (!pwdValidation.valid) {
-                alert('Password does not meet required security criteria!');
+                alert('Password must include Uppercase, Lowercase, Number & Symbol (Min 8 chars)!');
                 return;
             }
 
@@ -161,9 +161,10 @@ const POSApp = (function() {
             tempSignupData = { company, email, category, username, password };
             signupGeneratedOTP = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // এখানে সিক্রেট ওটিপি ইউজারকে মেইলে পাঠানো হচ্ছে (যাতে ইউজার ইনবক্সে কোড পায়)
-            this.sendEmailJS(email, `OTP: ${signupGeneratedOTP}`, password, 'btn-send-otp', (success) => {
+            // ইমেইলে ওটিপি এবং লগইন ডিটেইলস পাঠানো হচ্ছে
+            this.sendEmailJS(email, `OTP Code: ${signupGeneratedOTP} (User: ${username})`, password, 'btn-send-otp', (success) => {
                 if (success) {
+                    alert('Login details & OTP have been sent to your email inbox!');
                     document.getElementById('otp-sent-email-display').innerText = email;
                     document.getElementById('signup-form-step1').classList.add('hidden');
                     document.getElementById('signup-form-step2').classList.remove('hidden');
@@ -185,7 +186,7 @@ const POSApp = (function() {
             };
 
             saveToLocalStorage();
-            alert('Email verified successfully! Account created.');
+            alert('Email verified successfully! Account created. Please Login.');
             tempSignupData = null;
             signupGeneratedOTP = "";
             this.showAuthScreen('login-card');
@@ -206,6 +207,7 @@ const POSApp = (function() {
 
             this.sendEmailJS(email, `Reset OTP: ${forgotPasswordOTP}`, userEntry.password, 'btn-send-forgot-otp', (success) => {
                 if (success) {
+                    alert('Password reset OTP sent to your email!');
                     document.getElementById('forgot-email-display').innerText = email;
                     document.getElementById('forgot-form-step1').classList.add('hidden');
                     document.getElementById('forgot-form-step2').classList.remove('hidden');
@@ -224,7 +226,7 @@ const POSApp = (function() {
 
             const pwdValidation = this.validateStrongPassword(newPassword);
             if (!pwdValidation.valid) {
-                alert('New password does not meet criteria!');
+                alert('New password does not meet security criteria!');
                 return;
             }
 
@@ -233,6 +235,8 @@ const POSApp = (function() {
                 dbUsers[username].password = newPassword;
                 saveToLocalStorage();
                 alert('Password reset successful! Please login with your new password.');
+                forgotPasswordOTP = "";
+                forgotEmailAccount = "";
                 this.showAuthScreen('login-card');
             }
         },
