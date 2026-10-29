@@ -6,19 +6,14 @@
     <title>Business POS & Inventory Pro Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- JsBarcode CDN -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    
-    <!-- EmailJS SDK Integration -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script type="text/javascript">
-       (function(){
-          emailjs.init("VUPt3baxoSubxSxC_");[cite: 11]
-       })();
-    </script>
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen antialiased">
+<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
 
     <!-- AUTHENTICATION CONTAINER -->
     <div id="auth-container" class="flex-grow flex items-center justify-center p-4">
@@ -45,7 +40,7 @@
                         <button type="button" onclick="POSApp.togglePasswordVisibility('login-password')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">👁️</button>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-200">Login</button>
+                <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-200 interactive-hover">Login</button>
             </form>
             <div class="text-center mt-6">
                 <p class="text-sm text-slate-600">New business? <button onclick="POSApp.showAuthScreen('signup-card')" class="text-indigo-600 font-semibold hover:underline">Create an account</button></p>
@@ -60,19 +55,19 @@
                 <p class="text-sm text-slate-500 mt-1">Register your business profile to get started</p>
             </div>
             
-            <!-- STEP 1 -->
+            <!-- STEP 1: Registration Form -->
             <form id="signup-form-step1" onsubmit="event.preventDefault(); POSApp.initiateSignupOTP();" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Company / Business Name</label>
-                    <input type="text" id="reg-company" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="e.g. Global Traders">
+                    <input type="text" id="reg-company" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="e.g., Global Traders">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address</label>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address (For Credentials & OTP)</label>
                     <input type="email" id="reg-email" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="name@company.com">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Business Category</label>
-                    <input type="text" id="reg-category" class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="Retail / Grocery">
+                    <input type="text" id="reg-category" class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="e.g., Grocery / Electronics / Retail">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username</label>
@@ -89,16 +84,17 @@
                 <button type="submit" id="btn-send-otp" class="w-full bg-emerald-600 text-white p-2.5 rounded-lg font-semibold hover:bg-emerald-700 transition text-sm">Send Email Verification OTP</button>
             </form>
 
-            <!-- STEP 2 -->
+            <!-- STEP 2: Registration OTP Verification -->
             <form id="signup-form-step2" onsubmit="event.preventDefault(); POSApp.verifySignupOTP();" class="space-y-4 hidden">
                 <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg text-center">
-                    <p class="text-xs text-indigo-800">We sent an OTP code to <br><strong id="otp-sent-email-display" class="font-semibold"></strong></p>
+                    <p class="text-xs text-indigo-800">We sent a 6-digit OTP code to <br><strong id="otp-sent-email-display" class="font-semibold"></strong></p>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1 text-center">Enter 6-Digit OTP Code</label>
                     <input type="text" id="reg-otp-input" maxlength="6" required class="w-full border border-slate-200 p-3 rounded-lg text-center font-mono text-xl tracking-widest font-bold" placeholder="000000">
                 </div>
                 <button type="submit" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm">Verify OTP & Complete Account</button>
+                <button type="button" onclick="POSApp.initiateSignupOTP()" class="w-full text-xs text-indigo-600 hover:underline">Resend OTP</button>
             </form>
 
             <div class="text-center mt-4">
@@ -111,67 +107,445 @@
             <div class="text-center mb-6">
                 <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Account Recovery</span>
                 <h2 class="text-3xl font-bold text-slate-900 mt-2">Reset Password</h2>
+                <p class="text-sm text-slate-500 mt-1">Recover access using your registered email</p>
             </div>
+
+            <!-- STEP 1: Request OTP -->
             <form id="forgot-form-step1" onsubmit="event.preventDefault(); POSApp.sendForgotOTP();" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Registered Email Address</label>
                     <input type="email" id="forgot-email" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="name@company.com">
                 </div>
-                <button type="submit" id="btn-send-forgot-otp" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm">Send Reset OTP</button>
+                <button type="submit" id="btn-send-forgot-otp" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition shadow-md shadow-amber-200 text-sm">Send Reset OTP</button>
             </form>
+
+            <!-- STEP 2: Verify OTP & New Password -->
             <form id="forgot-form-step2" onsubmit="event.preventDefault(); POSApp.resetPassword();" class="space-y-3 hidden">
                 <div class="bg-amber-50 border border-amber-100 p-3 rounded-lg text-center">
                     <p class="text-xs text-amber-800">OTP code sent to <strong id="forgot-email-display"></strong></p>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Enter OTP Code</label>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Enter 6-Digit OTP</label>
                     <input type="text" id="forgot-otp-input" maxlength="6" required class="w-full border border-slate-200 p-2.5 rounded-lg text-center font-mono text-lg tracking-widest font-bold" placeholder="000000">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">New Password</label>
-                    <input type="password" id="forgot-new-password" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="••••••••">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">New Strong Password</label>
+                    <div class="relative">
+                        <input type="password" id="forgot-new-password" required oninput="POSApp.checkPasswordStrength('forgot-new-password', 'forgot-strength-indicator')" class="w-full border border-slate-200 px-3 py-2 pr-10 rounded-lg text-sm" placeholder="••••••••">
+                        <button type="button" onclick="POSApp.togglePasswordVisibility('forgot-new-password')" class="absolute right-3 top-2 text-slate-400">👁️</button>
+                    </div>
+                    <div id="forgot-strength-indicator" class="text-[10px] mt-1 space-y-0.5"></div>
                 </div>
                 <button type="submit" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm">Update Password</button>
             </form>
+
             <div class="text-center mt-4">
                 <button onclick="POSApp.showAuthScreen('login-card')" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Login</button>
             </div>
         </div>
+
     </div>
 
     <!-- MAIN APP WRAPPER -->
     <div id="app-container" class="hidden flex-grow flex flex-col md:flex-row">
-        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800">
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 no-print">
             <div class="p-6 border-b border-slate-800 flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-lg" id="app-company-logo-text">P</div>
-                <div>
-                    <h2 class="font-bold text-white leading-tight" id="app-company-name">Company</h2>
-                    <span class="text-xs text-slate-400" id="app-username">User</span>
+                <img id="sidebar-dp" src="" class="w-10 h-10 rounded-full object-cover border-2 border-indigo-500 hidden" alt="Profile">
+                <div id="sidebar-initial-logo" class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-lg">P</div>
+                <div class="truncate">
+                    <h2 class="font-bold text-white leading-tight truncate w-36" id="app-company-name">Company Name</h2>
+                    <span class="text-xs text-slate-400" id="app-username">User: Admin</span>
                 </div>
             </div>
+
             <nav class="flex-grow p-4 space-y-1">
-                <button onclick="POSApp.switchTab('tab-pos')" id="btn-tab-pos" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium bg-indigo-600 text-white">🛒 POS</button>
-                <button onclick="POSApp.switchTab('tab-inventory')" id="btn-tab-inventory" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800">📦 Inventory</button>
-                <button onclick="POSApp.switchTab('tab-statement')" id="btn-tab-statement" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800">📊 Statements</button>
+                <button onclick="POSApp.switchTab('tab-pos')" id="btn-tab-pos" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium bg-indigo-600 text-white transition">
+                    <span>🛒</span> <span>Point of Sale (POS)</span>
+                </button>
+                <button onclick="POSApp.switchTab('tab-inventory')" id="btn-tab-inventory" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>📦</span> <span>Inventory Management</span>
+                </button>
+                <button onclick="POSApp.switchTab('tab-statement')" id="btn-tab-statement" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>📊</span> <span>Accounts & Statements</span>
+                </button>
+                <button onclick="POSApp.switchTab('tab-profile')" id="btn-tab-profile" class="sidebar-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium hover:bg-slate-800 hover:text-white transition">
+                    <span>👤</span> <span>Profile Settings</span>
+                </button>
             </nav>
             <div class="p-4 border-t border-slate-800">
-                <button onclick="POSApp.handleLogout()" class="w-full bg-red-900/40 text-red-400 p-2 rounded-lg text-sm">Logout</button>
+                <button onclick="POSApp.handleLogout()" class="w-full flex items-center justify-center space-x-2 bg-red-950/40 text-red-400 hover:bg-red-900/50 p-2.5 rounded-lg text-sm font-medium transition">
+                    <span>🚪</span> <span>Logout</span>
+                </button>
             </div>
         </aside>
-        <main class="flex-grow p-6">
-            <div id="tab-pos" class="tab-content">
-                <h1 class="text-2xl font-bold mb-4">Point of Sale Dashboard</h1>
-                <p class="text-slate-500">Welcome to POS system workspace.</p>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="flex-grow p-6 md:p-8 overflow-y-auto no-print flex flex-col justify-between">
+            <div class="flex-grow space-y-6">
+                
+                <!-- LOW STOCK TOP ALERT BANNER -->
+                <div id="low-stock-alert-banner" class="hidden bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl flex items-center justify-between shadow-sm transition-all">
+                    <div class="flex items-center space-x-3">
+                        <div class="p-2 bg-rose-100 rounded-lg text-rose-600 font-bold text-lg">⚠️</div>
+                        <div>
+                            <h4 class="font-bold text-sm">Low Stock Alert Detected!</h4>
+                            <p class="text-xs text-rose-600 mt-0.5" id="low-stock-alert-message">Several items are running low in inventory.</p>
+                        </div>
+                    </div>
+                    <button onclick="POSApp.switchTab('tab-inventory')" class="bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-semibold hover:bg-rose-700 transition">Review Inventory</button>
+                </div>
+
+                <!-- POS TAB -->
+                <div id="tab-pos" class="tab-content space-y-6">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-900">Point of Sale (POS)</h1>
+                            <p class="text-sm text-slate-500">Scan Barcode or select manually to instantly create e-bills</p>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-2">
+                            <span class="relative flex h-2 w-2">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            <span>Auto Barcode Scanner Active</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 space-y-6">
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 text-sm uppercase tracking-wider">Select Product & Quantity</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                                    <div class="sm:col-span-5">
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Select Product</label>
+                                        <select id="bill-product-select" onchange="POSApp.updatePOSUnitDisplay()" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></select>
+                                    </div>
+                                    <div class="sm:col-span-4">
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label>
+                                        <div class="relative flex items-center">
+                                            <input type="number" step="any" id="bill-qty-input" oninput="POSApp.calculateLivePOSBreakdown()" class="w-full border border-slate-200 p-2.5 pr-16 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0.00">
+                                            <span id="pos-unit-badge" class="absolute right-3 text-xs font-bold text-slate-400 uppercase">Unit</span>
+                                        </div>
+                                    </div>
+                                    <div class="sm:col-span-3 flex items-end">
+                                        <button onclick="POSApp.addToCart()" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Add to Cart</button>
+                                    </div>
+                                </div>
+
+                                <div id="live-calculation-panel" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                                    <div><span class="text-slate-400 block">Unit Price:</span><span id="live-unit-price" class="font-bold text-slate-700">0.00 TK</span></div>
+                                    <div><span class="text-slate-400 block">Subtotal:</span><span id="live-subtotal" class="font-bold text-slate-700">0.00 TK</span></div>
+                                    <div><span class="text-slate-400 block">VAT / Discount:</span><span id="live-vat-dis" class="font-bold text-slate-700">0.00 TK</span></div>
+                                    <div><span class="text-slate-400 block">Gift / Offer:</span><span id="live-gift" class="font-bold text-emerald-600 font-medium">-</span></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                                <div class="p-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center">
+                                    <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Current Order Items</h3>
+                                    <span class="bg-indigo-100 text-indigo-700 text-xs px-2.5 py-1 rounded-full font-bold" id="cart-item-count">0 Items</span>
+                                </div>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm">
+                                        <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                            <tr>
+                                                <th class="p-4">Product Name</th>
+                                                <th class="p-4">Quantity</th>
+                                                <th class="p-4">Unit Price</th>
+                                                <th class="p-4">Dis / VAT</th>
+                                                <th class="p-4">Subtotal</th>
+                                                <th class="p-4 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="cart-table-body" class="divide-y divide-slate-100">
+                                            <tr><td colspan="6" class="p-8 text-center text-slate-400">Your cart is empty. Scan barcode directly from your scanner hardware!</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                                <h3 class="font-bold text-slate-800 border-b pb-2 text-sm uppercase tracking-wider">Payment Details</h3>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label>
+                                        <select id="bill-pay-method" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                            <option value="Cash">Cash</option>
+                                            <option value="Card">Card</option>
+                                            <option value="Online Pay">Online Pay</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Amount Receive Selection</label>
+                                        <select id="bill-receive-status" onchange="POSApp.togglePaidInputDisplay()" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                            <option value="Paid">Paid (Full/Partial)</option>
+                                            <option value="Unpaid">Unpaid (Full Due)</option>
+                                        </select>
+                                    </div>
+                                    <div id="paid-amount-input-container">
+                                        <label class="block text-xs font-semibold text-slate-600 mb-1">Amount Received (TK)</label>
+                                        <input type="number" step="any" id="bill-paid-input" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0.00">
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-sm">
+                                    <div class="flex justify-between text-slate-600"><span>Total Items:</span><span id="summary-items-qty" class="font-bold">0</span></div>
+                                    <div class="flex justify-between text-slate-600"><span>Total Discount:</span><span id="summary-discount" class="font-bold text-rose-500">0.00 TK</span></div>
+                                    <div class="flex justify-between text-slate-600"><span>Total VAT:</span><span id="summary-vat" class="font-bold text-amber-600">0.00 TK</span></div>
+                                    <div class="flex justify-between text-lg text-indigo-600 font-bold border-t pt-2"><span>Grand Total:</span><span id="summary-total">0.00 TK</span></div>
+                                </div>
+                                <button onclick="POSApp.processFinalInvoice()" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg text-center interactive-hover">Create Bill</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INVENTORY TAB -->
+                <div id="tab-inventory" class="tab-content hidden space-y-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Inventory Stock Room</h1>
+                        <p class="text-sm text-slate-500">Manage products, custom SKUs, and download generated barcodes</p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-800 border-b pb-2 text-sm uppercase tracking-wider">New Product Ingest</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Product Name</label>
+                                <input type="text" id="inv-name" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Product name">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Product SKU / Barcode</label>
+                                <input type="text" id="inv-sku" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Optional Custom SKU">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Measurement Unit</label>
+                                <select id="inv-unit" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm">
+                                    <option value="PCs">Pieces (PCs)</option>
+                                    <option value="Kg">Kilogram (Kg)</option>
+                                    <option value="gm">Gram (gm)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Stock Quantity</label>
+                                <input type="number" step="any" id="inv-qty" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Qty">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Min Stock Alert Limit</label>
+                                <input type="number" id="inv-min-stock" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" value="5" placeholder="e.g. 5">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Buying Price (TK)</label>
+                                <input type="number" step="any" id="inv-buy" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Per unit">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Selling Price (TK)</label>
+                                <input type="number" step="any" id="inv-sell" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Per unit">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Discount (TK Amount)</label>
+                                <input type="number" step="any" id="inv-discount" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">VAT (%)</label>
+                                <input type="number" step="any" id="inv-vat" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" value="0">
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Gift Item / Offer</label>
+                                <input type="text" id="inv-gift" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Optional gift">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="POSApp.handleSaveProduct()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Save Product & Build Barcode</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-4">Product Details</th>
+                                        <th class="p-4">Stock Level</th>
+                                        <th class="p-4">Buying Price</th>
+                                        <th class="p-4">Selling Price</th>
+                                        <th class="p-4">Discount</th>
+                                        <th class="p-4">VAT</th>
+                                        <th class="p-4">Attached Gift</th>
+                                        <th class="p-4 text-center">Generated Barcode</th>
+                                        <th class="p-4 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-table-body" class="divide-y divide-slate-100">
+                                    <tr><td colspan="9" class="p-8 text-center text-slate-400">No products inside the inventory database.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STATEMENT TAB -->
+                <div id="tab-statement" class="tab-content hidden space-y-6">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-bold text-slate-900">Financial Ledger</h1>
+                            <p class="text-sm text-slate-500">View performance parameters and download system audits</p>
+                        </div>
+                        <button onclick="POSApp.handleDownloadCSV()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition flex items-center space-x-2 interactive-hover">
+                            <span>📥</span> <span>Download CSV Statement</span>
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center text-2xl">💰</div>
+                            <div><span class="text-xs text-slate-400 uppercase font-semibold">Total Revenue</span><h3 class="text-2xl font-bold text-slate-900" id="widget-total-sales">0.00 TK</h3></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-2xl">💵</div>
+                            <div><span class="text-xs text-slate-400 uppercase font-semibold">Cash Liquidated</span><h3 class="text-2xl font-bold text-emerald-600" id="widget-total-received">0.00 TK</h3></div>
+                        </div>
+                        <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex items-center space-x-4">
+                            <div class="w-12 h-12 bg-rose-50 rounded-xl flex items-center justify-center text-2xl">🚨</div>
+                            <div><span class="text-xs text-slate-400 uppercase font-semibold">Receivable Due</span><h3 class="text-2xl font-bold text-rose-600" id="widget-total-due">0.00 TK</h3></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-4">Timestamp</th>
+                                        <th class="p-4">Gross Total</th>
+                                        <th class="p-4">Paid Amount</th>
+                                        <th class="p-4">Outstanding Due</th>
+                                        <th class="p-4">Method</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="statement-table-body" class="divide-y divide-slate-100"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROFILE TAB -->
+                <div id="tab-profile" class="tab-content hidden space-y-6">
+                    <div>
+                        <h1 class="text-2xl font-bold text-slate-900">Profile & Outlet Settings</h1>
+                        <p class="text-sm text-slate-500">Configure store metadata, Helpline, Shop Logo and Upload Important Business Documents</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm max-w-3xl space-y-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <img id="profile-preview-img" src="https://via.placeholder.com/150" class="w-24 h-24 rounded-xl object-cover border-4 border-indigo-100" alt="Preview">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Upload Shop Logo / Avatar (JPG/PNG)</label>
+                                <input type="file" id="profile-dp-input" accept="image/png, image/jpeg" onchange="POSApp.previewProfileDp(event)" class="text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Shop / Outlet Address</label>
+                                <input type="text" id="prof-address" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="e.g., Khulna, Bangladesh">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Helpline Number / Contact</label>
+                                <input type="text" id="prof-helpline" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="e.g., +8801XXXXXXXXX">
+                            </div>
+                        </div>
+
+                        <!-- Business Documents Section -->
+                        <div class="border-t pt-5 space-y-3">
+                            <h3 class="font-bold text-slate-800 text-sm uppercase tracking-wider">Business Important Documents (JPG/PDF)</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <input type="text" id="doc-title" class="border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Doc Name (e.g. Trade License)">
+                                <input type="file" id="doc-file-input" accept="image/jpeg,image/png,application/pdf" class="text-xs text-slate-500 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700">
+                                <button onclick="POSApp.uploadBusinessDocument()" class="bg-emerald-600 text-white py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition">Upload & Save Doc</button>
+                            </div>
+                            <div class="overflow-x-auto mt-3">
+                                <table class="w-full text-left text-sm border border-slate-100 rounded-lg overflow-hidden">
+                                    <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+                                        <tr>
+                                            <th class="p-3">Document Title</th>
+                                            <th class="p-3">Type</th>
+                                            <th class="p-3 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="business-docs-table-body" class="divide-y divide-slate-100">
+                                        <tr><td colspan="3" class="p-4 text-center text-slate-400 text-xs">No documents uploaded yet.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <button onclick="POSApp.saveProfileConfiguration()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Save Settings</button>
+                    </div>
+                </div>
             </div>
-            <div id="tab-inventory" class="tab-content hidden">
-                <h1 class="text-2xl font-bold mb-4">Inventory Management</h1>
-            </div>
-            <div id="tab-statement" class="tab-content hidden">
-                <h1 class="text-2xl font-bold mb-4">Financial Statements</h1>
-            </div>
+
+            <footer class="mt-12 py-4 text-center text-xs text-slate-400 font-medium border-t border-slate-100 no-print">
+                All copy reserved by BuildFace Innovation
+            </footer>
         </main>
     </div>
 
+    <!-- Document Modal Preview Viewer -->
+    <div id="doc-modal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-4 space-y-4 shadow-xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 id="modal-doc-title" class="font-bold text-slate-800">Document View</h3>
+                <button onclick="POSApp.closeDocModal()" class="text-slate-500 font-bold hover:text-red-500">✕ Close</button>
+            </div>
+            <div id="modal-doc-content" class="flex justify-center max-h-[70vh] overflow-auto"></div>
+        </div>
+    </div>
+
+    <!-- INVOICE PRINT AREA -->
+    <div id="print-area" class="hidden">
+        <div class="text-center mb-3 flex flex-col items-center">
+            <img id="bill-shop-logo" src="" class="w-12 h-12 object-cover rounded-lg mb-1 hidden" alt="Logo">
+            <h1 id="bill-shop-name" class="text-lg font-bold uppercase tracking-wide text-black">SHOP NAME</h1>
+            <p id="bill-shop-cat" class="text-[10px] text-slate-600 uppercase">CATEGORY</p>
+            <p id="bill-shop-address" class="text-[10px] text-slate-600 font-medium"></p>
+            <div class="border-t border-b border-black py-0.5 my-1.5 font-bold text-sm tracking-widest text-center w-full">** INVOICE **</div>
+        </div>
+        <div class="text-[11px] space-y-0.5 mb-2 text-black">
+            <p><strong>Timestamp:</strong> <span id="bill-date"></span></p>
+        </div>
+        <table class="w-full text-[11px] border-b border-black mb-2">
+            <thead>
+                <tr class="border-b border-black text-black font-bold">
+                    <th class="text-left py-0.5">Item</th>
+                    <th class="text-right py-0.5">Qty</th>
+                    <th class="text-right py-0.5">Rate</th>
+                    <th class="text-right py-0.5">Total</th>
+                </tr>
+            </thead>
+            <tbody id="bill-items-body" class="text-black"></tbody>
+        </table>
+        <div class="text-[11px] text-right space-y-0.5 mb-3 text-black">
+            <div id="bill-total-price"></div>
+            <p class="mt-1">Payment Mode: <span id="bill-payment-type" class="font-semibold">Cash</span></p>
+            <p>Amount Paid: <span id="bill-paid-price" class="font-semibold">0.00</span> TK</p>
+            <p class="border-t border-dotted border-black pt-0.5">Balance Due: <span id="bill-due-price" class="font-bold">0.00</span> TK</p>
+        </div>
+        <div class="text-center text-[10px] border-t border-slate-300 pt-1.5 text-slate-700 space-y-0.5">
+            <p class="font-semibold">Thank you for your business!</p>
+            <p id="bill-shop-helpline"></p>
+            <div class="text-[9px] text-slate-500 font-bold tracking-wider pt-1 border-t border-dotted mt-1">
+                Powered by BuildFace Innovation
+            </div>
+        </div>
+        <div class="text-center text-xs mt-4 no-print flex justify-center space-x-2">
+            <button onclick="window.print()" class="bg-indigo-600 text-white px-4 py-1.5 rounded font-bold shadow hover:bg-indigo-700">Print Invoice</button>
+            <button onclick="POSApp.closeInvoiceView()" class="bg-slate-300 text-slate-700 px-4 py-1.5 rounded font-bold hover:bg-slate-400">Close</button>
+        </div>
+    </div>
+
+    <!-- External JavaScript -->
     <script src="script.js"></script>
 </body>
 </html>
