@@ -574,11 +574,12 @@
 
             <!-- Printable Voucher Container -->
             <div id="printable-voucher-box" class="bg-white p-6 border border-slate-200 rounded-xl space-y-4 text-sm text-black">
-                <div class="text-center border-b pb-3">
+                <div class="text-center border-b pb-3 flex flex-col items-center">
+                    <img id="pv-shop-logo" src="" class="w-14 h-14 object-cover rounded-lg mb-2 hidden" alt="Logo">
                     <h1 id="pv-business-name" class="text-xl font-bold uppercase">Business Name</h1>
                     <p id="pv-voucher-title" class="text-xs font-bold text-indigo-600 uppercase mt-1">Credit Voucher</p>
-                    <p class="text-xs text-slate-500 font-mono mt-0.5">Voucher No: <span id="pv-voucher-number" class="font-bold"></span></p>
-                    <p class="text-xs text-slate-500">Date: <span id="pv-date"></span></p>
+                    <p class="text-xs text-slate-600 font-mono mt-0.5">Voucher No: <span id="pv-voucher-number" class="font-bold"></span></p>
+                    <p class="text-xs text-slate-600">Date: <span id="pv-date"></span></p>
                 </div>
                 
                 <div id="pv-details-grid" class="grid grid-cols-2 gap-3 text-xs"></div>
@@ -605,7 +606,7 @@
             </div>
 
             <div class="flex justify-end space-x-3 no-print pt-3 border-t">
-                <button onclick="window.print()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700">🖨️ Print</button>
+                <button onclick="POSApp.printVoucher()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700">🖨️ Print</button>
                 <button onclick="POSApp.downloadVoucherPDF()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700">📥 Download PDF</button>
             </div>
         </div>
