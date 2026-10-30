@@ -258,7 +258,9 @@ const POSApp = (function() {
         saveProfileConfiguration: function() {
             dbUsers[activeUser].address = document.getElementById('prof-address').value.trim();
             dbUsers[activeUser].helpline = document.getElementById('prof-helpline').value.trim();
-            if (tempProfileDpBase64) dbUsers[activeUser].dp = tempProfileDpBase64;
+            if (tempProfileDpBase64) {
+                dbUsers[activeUser].dp = tempProfileDpBase64;
+            }
             saveToLocalStorage();
             alert('Profile Settings successfully updated!');
             this.loadApplication();
@@ -566,6 +568,15 @@ const POSApp = (function() {
             document.getElementById('pv-voucher-number').innerText = v.uniqueNum;
             document.getElementById('pv-date').innerText = v.date;
 
+            // Load Shop Logo reliably
+            const logoElement = document.getElementById('pv-shop-logo');
+            if (activeUser && dbUsers[activeUser] && dbUsers[activeUser].dp) {
+                logoElement.src = dbUsers[activeUser].dp;
+                logoElement.classList.remove('hidden');
+            } else {
+                logoElement.classList.add('hidden');
+            }
+
             const grid = document.getElementById('pv-details-grid');
             grid.innerHTML = '';
 
@@ -618,16 +629,60 @@ const POSApp = (function() {
             document.getElementById('voucher-preview-modal').classList.add('hidden');
         },
 
+        // 🖨️ Safe Printable Engine via Hidden Iframe (Does not mess up main DOM)
+        printVoucher: function() {
+            const printContent = document.getElementById('printable-voucher-box').outerHTML;
+            
+            let printFrame = document.getElementById('print-iframe');
+            if (!printFrame) {
+                printFrame = document.createElement('iframe');
+                printFrame.id = 'print-iframe';
+                printFrame.style.position = 'absolute';
+                printFrame.style.top = '-9999px';
+                printFrame.style.left = '-9999px';
+                document.body.appendChild(printFrame);
+            }
+
+            const frameDoc = printFrame.contentWindow || printFrame.contentDocument.document || printFrame.contentDocument;
+            frameDoc.document.open();
+            frameDoc.document.write(`
+                <html>
+                    <head>
+                        <title>Print Voucher</title>
+                        <script src="https://cdn.tailwindcss.com"></script>
+                        <style>
+                            body { font-family: 'Inter', sans-serif; padding: 20px; }
+                        </style>
+                    </head>
+                    <body>
+                        ${printContent}
+                    </body>
+                </html>
+            `);
+            frameDoc.document.close();
+
+            setTimeout(() => {
+                printFrame.contentWindow.focus();
+                printFrame.contentWindow.print();
+            }, 500);
+        },
+
+        // 📥 PDF Generation Engine
         downloadVoucherPDF: function() {
             const element = document.getElementById('printable-voucher-box');
             const opt = {
                 margin:       10,
                 filename:     'Voucher_Challan.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2 },
+                html2canvas:  { scale: 2, useCORS: true, allowTaint: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
-            html2pdf().from(element).set(opt).save();
+            
+            if (typeof html2pdf !== 'undefined') {
+                html2pdf().set(opt).from(element).save();
+            } else {
+                alert('PDF Generator library is loading. Please try again in 2 seconds.');
+            }
         },
 
         deleteVoucher: function(index) {
