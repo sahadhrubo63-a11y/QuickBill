@@ -1,5 +1,5 @@
 /**
- * Enterprise POS Engine Namespace with OTP Verification, Strong Password Validation & Reset Flow
+ * Enterprise POS Engine Namespace with Vouchers, Challans, OTP & Audit Ledgers
  */
 const POSApp = (function() {
     let activeUser = null;
@@ -7,7 +7,6 @@ const POSApp = (function() {
     let cart = [];
     let tempProfileDpBase64 = "";
 
-    // Temporary storage for OTP Verification flow
     let tempSignupData = null;
     let signupGeneratedOTP = "";
     let forgotPasswordOTP = "";
@@ -76,41 +75,20 @@ const POSApp = (function() {
 
         togglePasswordVisibility: function(inputId) {
             const input = document.getElementById(inputId);
-            if (input.type === "password") {
-                input.type = "text";
-            } else {
-                input.type = "password";
-            }
-        },
-
-        validateStrongPassword: function(password) {
-            const minLength = 8;
-            const hasUpperCase = /[A-Z]/.test(password);
-            const hasLowerCase = /[a-z]/.test(password);
-            const hasNumbers = /\d/.test(password);
-            const hasSymbol = /[\W_]/.test(password);
-
-            return {
-                valid: password.length >= minLength && hasUpperCase && hasLowerCase && hasNumbers && hasSymbol,
-                minLength, hasUpperCase, hasLowerCase, hasNumbers, hasSymbol
-            };
+            input.type = input.type === "password" ? "text" : "password";
         },
 
         checkPasswordStrength: function(inputId, indicatorId) {
             const password = document.getElementById(inputId).value;
-            const res = this.validateStrongPassword(password);
             const ind = document.getElementById(indicatorId);
-
             ind.innerHTML = `
-                <div class="${res.hasUpperCase ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Uppercase letter (A-Z)</div>
-                <div class="${res.hasLowerCase ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Lowercase letter (a-z)</div>
-                <div class="${res.hasNumbers ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Number (0-9)</div>
-                <div class="${res.hasSymbol ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Special Symbol (@, #, $, etc.)</div>
-                <div class="${res.minLength ? 'text-emerald-600' : 'text-slate-400'}">✓ Minimum 8 characters</div>
+                <div class="${/[A-Z]/.test(password) ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Uppercase letter</div>
+                <div class="${/[a-z]/.test(password) ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Lowercase letter</div>
+                <div class="${/\d/.test(password) ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Number</div>
+                <div class="${password.length >= 8 ? 'text-emerald-600' : 'text-slate-400'}">✓ Min 8 characters</div>
             `;
         },
 
-        /* SIGNUP & OTP FLOW */
         initiateSignupOTP: function() {
             const company = document.getElementById('reg-company').value.trim();
             const email = document.getElementById('reg-email').value.trim().toLowerCase();
@@ -123,29 +101,15 @@ const POSApp = (function() {
                 return;
             }
 
-            const pwdValidation = this.validateStrongPassword(password);
-            if (!pwdValidation.valid) {
-                alert('Password does not meet required security criteria!');
-                return;
-            }
-
             if (dbUsers[username]) {
                 alert('Username is already taken!');
-                return;
-            }
-
-            // Check if email already exists
-            const emailExists = Object.values(dbUsers).some(u => u.email === email);
-            if (emailExists) {
-                alert('An account with this email address already exists!');
                 return;
             }
 
             tempSignupData = { company, email, category, username, password };
             signupGeneratedOTP = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Simulate Email Inbox Transmission
-            alert(`[EMAIL INBOX SIMULATION]\n\nAn OTP has been sent to ${email}.\nYour Verification Code is: ${signupGeneratedOTP}`);
+            alert(`[EMAIL INBOX SIMULATION]\n\nOTP sent to ${email}.\nYour Verification Code is: ${signupGeneratedOTP}`);
 
             document.getElementById('otp-sent-email-display').innerText = email;
             document.getElementById('signup-form-step1').classList.add('hidden');
@@ -155,38 +119,35 @@ const POSApp = (function() {
         verifySignupOTP: function() {
             const enteredOTP = document.getElementById('reg-otp-input').value.trim();
             if (enteredOTP !== signupGeneratedOTP) {
-                alert('Invalid OTP code! Please check your inbox and try again.');
+                alert('Invalid OTP code!');
                 return;
             }
 
             const { username, password, company, category, email } = tempSignupData;
             dbUsers[username] = {
                 username, email, password, company, category, inventory: [], statements: [],
-                address: "", helpline: "", dp: "", documents: []
+                vouchers: [], address: "", helpline: "", dp: "", documents: []
             };
 
             saveToLocalStorage();
-            alert('Email verified successfully! Your account is created. Please Login.');
+            alert('Account created successfully! Please Login.');
             tempSignupData = null;
-            signupGeneratedOTP = "";
             this.showAuthScreen('login-card');
         },
 
-        /* FORGOT PASSWORD & RESET FLOW */
         sendForgotOTP: function() {
             const email = document.getElementById('forgot-email').value.trim().toLowerCase();
             const userEntry = Object.values(dbUsers).find(u => u.email === email);
 
             if (!userEntry) {
-                alert('No registered account found with this email address!');
+                alert('No registered account found with this email!');
                 return;
             }
 
             forgotEmailAccount = email;
             forgotPasswordOTP = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Simulate Email Inbox Transmission
-            alert(`[EMAIL INBOX SIMULATION]\n\nPassword recovery requested for ${email}.\nYour Password Reset OTP is: ${forgotPasswordOTP}`);
+            alert(`[EMAIL INBOX SIMULATION]\n\nPassword recovery requested for ${email}.\nYour Reset OTP is: ${forgotPasswordOTP}`);
 
             document.getElementById('forgot-email-display').innerText = email;
             document.getElementById('forgot-form-step1').classList.add('hidden');
@@ -202,20 +163,11 @@ const POSApp = (function() {
                 return;
             }
 
-            const pwdValidation = this.validateStrongPassword(newPassword);
-            if (!pwdValidation.valid) {
-                alert('New password does not meet required criteria!');
-                return;
-            }
-
-            // Find user username associated with the verified email
             const username = Object.keys(dbUsers).find(key => dbUsers[key].email === forgotEmailAccount);
             if (username && dbUsers[username]) {
                 dbUsers[username].password = newPassword;
                 saveToLocalStorage();
-                alert('Password reset successful! You can now login with your new password.');
-                forgotPasswordOTP = "";
-                forgotEmailAccount = "";
+                alert('Password reset successful! Please login.');
                 this.showAuthScreen('login-card');
             }
         },
@@ -224,7 +176,6 @@ const POSApp = (function() {
             const userOrEmail = document.getElementById('login-username').value.trim().toLowerCase();
             const pass = document.getElementById('login-password').value;
 
-            // Allow login by Username OR Email
             const usernameKey = Object.keys(dbUsers).find(u => u.toLowerCase() === userOrEmail || (dbUsers[u].email && dbUsers[u].email.toLowerCase() === userOrEmail));
 
             if (usernameKey && dbUsers[usernameKey].password === pass) {
@@ -257,9 +208,8 @@ const POSApp = (function() {
             document.getElementById('app-container').classList.remove('hidden');
             const userData = dbUsers[activeUser];
 
-            if (!userData.documents) {
-                userData.documents = [];
-            }
+            if (!userData.documents) userData.documents = [];
+            if (!userData.vouchers) userData.vouchers = [];
 
             document.getElementById('app-company-name').innerText = userData.company;
             document.getElementById('app-username').innerText = `User: ${userData.username}`;
@@ -275,8 +225,6 @@ const POSApp = (function() {
                 document.getElementById('sidebar-dp').classList.add('hidden');
                 document.getElementById('sidebar-initial-logo').classList.remove('hidden');
                 document.getElementById('sidebar-initial-logo').innerText = userData.company.substring(0, 1).toUpperCase();
-                document.getElementById('profile-preview-img').src = "https://via.placeholder.com/150";
-                document.getElementById('bill-shop-logo').classList.add('hidden');
             }
             document.getElementById('prof-address').value = userData.address || "";
             document.getElementById('prof-helpline').value = userData.helpline || "";
@@ -284,6 +232,7 @@ const POSApp = (function() {
             this.switchTab('tab-pos');
             this.renderInventory();
             this.renderStatements();
+            this.renderVouchersTable();
             this.renderBusinessDocuments();
         },
 
@@ -309,9 +258,7 @@ const POSApp = (function() {
         saveProfileConfiguration: function() {
             dbUsers[activeUser].address = document.getElementById('prof-address').value.trim();
             dbUsers[activeUser].helpline = document.getElementById('prof-helpline').value.trim();
-            if (tempProfileDpBase64) { 
-                dbUsers[activeUser].dp = tempProfileDpBase64; 
-            }
+            if (tempProfileDpBase64) dbUsers[activeUser].dp = tempProfileDpBase64;
             saveToLocalStorage();
             alert('Profile Settings successfully updated!');
             this.loadApplication();
@@ -325,7 +272,7 @@ const POSApp = (function() {
             const file = fileInput.files[0];
 
             if (!title || !file) {
-                alert('Please provide a document title and select a file (JPG or PDF)!');
+                alert('Please provide a document title and select a file!');
                 return;
             }
 
@@ -346,7 +293,7 @@ const POSApp = (function() {
                 
                 titleInput.value = '';
                 fileInput.value = '';
-                alert('Document successfully uploaded and saved!');
+                alert('Document successfully uploaded!');
             };
             reader.readAsDataURL(file);
         },
@@ -411,6 +358,283 @@ const POSApp = (function() {
                 dbUsers[activeUser].documents.splice(index, 1);
                 saveToLocalStorage();
                 this.renderBusinessDocuments();
+            }
+        },
+
+        /* VOUCHERS & CHALLAN SYSTEM */
+        openVoucherModal: function() {
+            document.getElementById('voucher-modal').classList.remove('hidden');
+            this.renderVoucherFormFields();
+        },
+
+        closeVoucherModal: function() {
+            document.getElementById('voucher-modal').classList.add('hidden');
+        },
+
+        renderVoucherFormFields: function() {
+            const type = document.getElementById('v-type-select').value;
+            const container = document.getElementById('voucher-dynamic-fields');
+            const defaultBusName = dbUsers[activeUser].company || '';
+            const uniqueNum = type === 'Challan' ? 'CH-' + Math.floor(1000 + Math.random() * 9000) : (type === 'Credit Voucher' ? 'CR-' + Math.floor(1000 + Math.random() * 9000) : 'DR-' + Math.floor(1000 + Math.random() * 9000));
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            if (type === 'Credit Voucher') {
+                container.innerHTML = `
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Business Name</label><input type="text" id="cv-bus" class="w-full border p-2 rounded text-sm" value="${defaultBusName}"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Voucher Number</label><input type="text" id="cv-num" class="w-full border p-2 rounded text-sm bg-slate-50 font-mono font-bold" value="${uniqueNum}" readonly></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Date</label><input type="date" id="cv-date" class="w-full border p-2 rounded text-sm" value="${todayStr}"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Received From</label><input type="text" id="cv-received" class="w-full border p-2 rounded text-sm" placeholder="Payer Name"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Account Name</label><input type="text" id="cv-account" class="w-full border p-2 rounded text-sm" placeholder="e.g., Cash / Bank"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label><select id="cv-method" class="w-full border p-2 rounded text-sm"><option>Cash</option><option>Bank Transfer</option><option>Cheque</option><option>Mobile Banking</option></select></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Transaction Reference</label><input type="text" id="cv-ref" class="w-full border p-2 rounded text-sm" placeholder="Txn ID or Cheque No"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Description / Narration</label><input type="text" id="cv-desc" class="w-full border p-2 rounded text-sm" placeholder="Narration"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount (৳)</label><input type="number" step="any" id="cv-amount" class="w-full border p-2 rounded text-sm" placeholder="0.00"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount in Words</label><input type="text" id="cv-words" class="w-full border p-2 rounded text-sm" placeholder="Taka in words"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="cv-prep" class="w-full border p-2 rounded text-sm" value="${dbUsers[activeUser].username}"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Authorized By</label><input type="text" id="cv-auth" class="w-full border p-2 rounded text-sm" placeholder="Manager Name"></div>
+                    </div>
+                `;
+            } else if (type === 'Debit Voucher') {
+                container.innerHTML = `
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Business Name</label><input type="text" id="dv-bus" class="w-full border p-2 rounded text-sm" value="${defaultBusName}"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Voucher Number</label><input type="text" id="dv-num" class="w-full border p-2 rounded text-sm bg-slate-50 font-mono font-bold" value="${uniqueNum}" readonly></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Date</label><input type="date" id="dv-date" class="w-full border p-2 rounded text-sm" value="${todayStr}"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Paid To</label><input type="text" id="dv-paidto" class="w-full border p-2 rounded text-sm" placeholder="Payee Name"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Account Name</label><input type="text" id="dv-account" class="w-full border p-2 rounded text-sm" placeholder="e.g., Expense Account"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Expense Category</label><input type="text" id="dv-expcat" class="w-full border p-2 rounded text-sm" placeholder="e.g., Utilities, Salary"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label><select id="dv-method" class="w-full border p-2 rounded text-sm"><option>Cash</option><option>Bank Transfer</option><option>Cheque</option><option>Mobile Banking</option></select></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Transaction Reference</label><input type="text" id="dv-ref" class="w-full border p-2 rounded text-sm" placeholder="Reference ID"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Description / Narration</label><input type="text" id="dv-desc" class="w-full border p-2 rounded text-sm" placeholder="Narration"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount (৳)</label><input type="number" step="any" id="dv-amount" class="w-full border p-2 rounded text-sm" placeholder="0.00"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount in Words</label><input type="text" id="dv-words" class="w-full border p-2 rounded text-sm" placeholder="Taka in words"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="dv-prep" class="w-full border p-2 rounded text-sm" value="${dbUsers[activeUser].username}"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Authorized By</label><input type="text" id="dv-auth" class="w-full border p-2 rounded text-sm" placeholder="Manager Name"></div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Business Name</label><input type="text" id="ch-bus" class="w-full border p-2 rounded text-sm" value="${defaultBusName}"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Challan Number</label><input type="text" id="ch-num" class="w-full border p-2 rounded text-sm bg-slate-50 font-mono font-bold" value="${uniqueNum}" readonly></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Challan Date</label><input type="date" id="ch-date" class="w-full border p-2 rounded text-sm" value="${todayStr}"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Customer Name</label><input type="text" id="ch-cname" class="w-full border p-2 rounded text-sm" placeholder="Customer Name"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Customer Phone</label><input type="text" id="ch-cphone" class="w-full border p-2 rounded text-sm" placeholder="Phone Number"></div>
+                    </div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Customer Address</label><input type="text" id="ch-caddr" class="w-full border p-2 rounded text-sm" placeholder="Address"></div>
+                    <div><label class="block text-xs font-semibold text-slate-600 mb-1">Delivery Address</label><input type="text" id="ch-daddr" class="w-full border p-2 rounded text-sm" placeholder="Delivery Location"></div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Reference Invoice Number</label><input type="text" id="ch-inv" class="w-full border p-2 rounded text-sm" placeholder="Invoice No"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Delivery Person</label><input type="text" id="ch-dperson" class="w-full border p-2 rounded text-sm" placeholder="Courier/Person"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Vehicle Number</label><input type="text" id="ch-vehicle" class="w-full border p-2 rounded text-sm" placeholder="Truck/Bike No"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Delivery Status</label><select id="ch-status" class="w-full border p-2 rounded text-sm"><option>Dispatched</option><option>Delivered</option><option>Pending</option></select></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Product Name</label><input type="text" id="ch-pname" class="w-full border p-2 rounded text-sm" placeholder="Product"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Product Code / SKU</label><input type="text" id="ch-psku" class="w-full border p-2 rounded text-sm" placeholder="SKU"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Unit</label><input type="text" id="ch-punit" class="w-full border p-2 rounded text-sm" placeholder="PCs/Kg"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Quantity</label><input type="number" step="any" id="ch-qty" class="w-full border p-2 rounded text-sm" placeholder="0"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Remarks</label><input type="text" id="ch-remarks" class="w-full border p-2 rounded text-sm" placeholder="Optional remarks"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 pt-2 border-t">
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Received By</label><input type="text" id="ch-recby" class="w-full border p-2 rounded text-sm" placeholder="Receiver"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Delivered By</label><input type="text" id="ch-delby" class="w-full border p-2 rounded text-sm" placeholder="Deliverer"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Authorized By</label><input type="text" id="ch-auth" class="w-full border p-2 rounded text-sm" placeholder="Authority"></div>
+                    </div>
+                `;
+            }
+        },
+
+        saveAndGenerateVoucher: function() {
+            const type = document.getElementById('v-type-select').value;
+            let record = { type };
+
+            if (type === 'Credit Voucher') {
+                record.businessName = document.getElementById('cv-bus').value;
+                record.uniqueNum = document.getElementById('cv-num').value;
+                record.date = document.getElementById('cv-date').value;
+                record.receivedFrom = document.getElementById('cv-received').value;
+                record.accountName = document.getElementById('cv-account').value;
+                record.paymentMethod = document.getElementById('cv-method').value;
+                record.ref = document.getElementById('cv-ref').value;
+                record.desc = document.getElementById('cv-desc').value;
+                record.amount = document.getElementById('cv-amount').value;
+                record.words = document.getElementById('cv-words').value;
+                record.prep = document.getElementById('cv-prep').value;
+                record.auth = document.getElementById('cv-auth').value;
+            } else if (type === 'Debit Voucher') {
+                record.businessName = document.getElementById('dv-bus').value;
+                record.uniqueNum = document.getElementById('dv-num').value;
+                record.date = document.getElementById('dv-date').value;
+                record.paidTo = document.getElementById('dv-paidto').value;
+                record.accountName = document.getElementById('dv-account').value;
+                record.expCat = document.getElementById('dv-expcat').value;
+                record.paymentMethod = document.getElementById('dv-method').value;
+                record.ref = document.getElementById('dv-ref').value;
+                record.desc = document.getElementById('dv-desc').value;
+                record.amount = document.getElementById('dv-amount').value;
+                record.words = document.getElementById('dv-words').value;
+                record.prep = document.getElementById('dv-prep').value;
+                record.auth = document.getElementById('dv-auth').value;
+            } else {
+                record.businessName = document.getElementById('ch-bus').value;
+                record.uniqueNum = document.getElementById('ch-num').value;
+                record.date = document.getElementById('ch-date').value;
+                record.cname = document.getElementById('ch-cname').value;
+                record.cphone = document.getElementById('ch-cphone').value;
+                record.caddr = document.getElementById('ch-caddr').value;
+                record.daddr = document.getElementById('ch-daddr').value;
+                record.inv = document.getElementById('ch-inv').value;
+                record.dperson = document.getElementById('ch-dperson').value;
+                record.vehicle = document.getElementById('ch-vehicle').value;
+                record.status = document.getElementById('ch-status').value;
+                record.pname = document.getElementById('ch-pname').value;
+                record.psku = document.getElementById('ch-psku').value;
+                record.punit = document.getElementById('ch-punit').value;
+                record.qty = document.getElementById('ch-qty').value;
+                record.remarks = document.getElementById('ch-remarks').value;
+                record.recby = document.getElementById('ch-recby').value;
+                record.delby = document.getElementById('ch-delby').value;
+                record.auth = document.getElementById('ch-auth').value;
+            }
+
+            dbUsers[activeUser].vouchers.push(record);
+            saveToLocalStorage();
+            this.closeVoucherModal();
+            this.renderVouchersTable();
+            this.previewVoucherObject(record);
+        },
+
+        renderVouchersTable: function(filteredList = null) {
+            const vouchers = filteredList || dbUsers[activeUser].vouchers || [];
+            const tbody = document.getElementById('vouchers-table-body');
+            tbody.innerHTML = '';
+
+            vouchers.forEach((v, index) => {
+                const entity = v.type === 'Challan' ? v.cname : (v.type === 'Credit Voucher' ? v.receivedFrom : v.paidTo);
+                const amtOrQty = v.type === 'Challan' ? `${v.qty || 0} ${v.punit || ''}` : `${parseFloat(v.amount || 0).toFixed(2)} TK`;
+
+                tbody.innerHTML += `
+                    <tr class="text-sm">
+                        <td class="p-4 font-mono font-bold text-indigo-600">${escapeHTML(v.uniqueNum)}</td>
+                        <td class="p-4"><span class="px-2 py-1 rounded text-xs font-semibold ${v.type==='Challan'?'bg-amber-100 text-amber-800':(v.type==='Credit Voucher'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800')}">${escapeHTML(v.type)}</span></td>
+                        <td class="p-4">${escapeHTML(v.date)}</td>
+                        <td class="p-4">${escapeHTML(entity)}</td>
+                        <td class="p-4 font-bold">${escapeHTML(amtOrQty)}</td>
+                        <td class="p-4 text-center space-x-2">
+                            <button onclick="POSApp.previewVoucherByIndex(${index})" class="text-indigo-600 font-semibold hover:underline">👁 View</button>
+                            <button onclick="POSApp.deleteVoucher(${index})" class="text-red-500 font-semibold hover:underline">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (vouchers.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No vouchers or challans found.</td></tr>`;
+            }
+        },
+
+        filterVouchers: function() {
+            const searchNum = document.getElementById('voucher-search-num').value.trim().toLowerCase();
+            const filterType = document.getElementById('voucher-filter-type').value;
+            const searchDate = document.getElementById('voucher-search-date').value;
+
+            const allVouchers = dbUsers[activeUser].vouchers || [];
+            const filtered = allVouchers.filter(v => {
+                const matchNum = searchNum === '' || v.uniqueNum.toLowerCase().includes(searchNum);
+                const matchType = filterType === 'All' || v.type === filterType;
+                const matchDate = searchDate === '' || v.date === searchDate;
+                return matchNum && matchType && matchDate;
+            });
+
+            this.renderVouchersTable(filtered);
+        },
+
+        previewVoucherByIndex: function(index) {
+            const v = dbUsers[activeUser].vouchers[index];
+            if (v) this.previewVoucherObject(v);
+        },
+
+        previewVoucherObject: function(v) {
+            document.getElementById('pv-business-name').innerText = v.businessName;
+            document.getElementById('pv-voucher-title').innerText = v.type;
+            document.getElementById('pv-voucher-number').innerText = v.uniqueNum;
+            document.getElementById('pv-date').innerText = v.date;
+
+            const grid = document.getElementById('pv-details-grid');
+            grid.innerHTML = '';
+
+            if (v.type === 'Credit Voucher') {
+                document.getElementById('pv-amount-label').innerText = 'Received Amount:';
+                document.getElementById('pv-amount-value').innerText = `${parseFloat(v.amount || 0).toFixed(2)} TK`;
+                document.getElementById('pv-amount-words').innerText = v.words || '-';
+                grid.innerHTML = `
+                    <div><strong>Received From:</strong> ${escapeHTML(v.receivedFrom)}</div>
+                    <div><strong>Account Name:</strong> ${escapeHTML(v.accountName)}</div>
+                    <div><strong>Payment Method:</strong> ${escapeHTML(v.paymentMethod)}</div>
+                    <div><strong>Reference:</strong> ${escapeHTML(v.ref)}</div>
+                    <div class="col-span-2"><strong>Narration:</strong> ${escapeHTML(v.desc)}</div>
+                `;
+            } else if (v.type === 'Debit Voucher') {
+                document.getElementById('pv-amount-label').innerText = 'Paid Amount:';
+                document.getElementById('pv-amount-value').innerText = `${parseFloat(v.amount || 0).toFixed(2)} TK`;
+                document.getElementById('pv-amount-words').innerText = v.words || '-';
+                grid.innerHTML = `
+                    <div><strong>Paid To:</strong> ${escapeHTML(v.paidTo)}</div>
+                    <div><strong>Account Name:</strong> ${escapeHTML(v.accountName)}</div>
+                    <div><strong>Expense Category:</strong> ${escapeHTML(v.expCat)}</div>
+                    <div><strong>Payment Method:</strong> ${escapeHTML(v.paymentMethod)}</div>
+                    <div><strong>Reference:</strong> ${escapeHTML(v.ref)}</div>
+                    <div class="col-span-2"><strong>Narration:</strong> ${escapeHTML(v.desc)}</div>
+                `;
+            } else {
+                document.getElementById('pv-amount-label').innerText = 'Total Quantity:';
+                document.getElementById('pv-amount-value').innerText = `${v.qty} ${v.punit}`;
+                document.getElementById('pv-amount-words').innerText = `Status: ${v.status}`;
+                grid.innerHTML = `
+                    <div><strong>Customer Name:</strong> ${escapeHTML(v.cname)} (${v.cphone})</div>
+                    <div><strong>Customer Address:</strong> ${escapeHTML(v.caddr)}</div>
+                    <div><strong>Delivery Address:</strong> ${escapeHTML(v.daddr)}</div>
+                    <div><strong>Ref Invoice:</strong> ${escapeHTML(v.inv)}</div>
+                    <div><strong>Product:</strong> ${escapeHTML(v.pname)} [${v.psku}]</div>
+                    <div><strong>Vehicle / Person:</strong> ${escapeHTML(v.vehicle)} / ${escapeHTML(v.dperson)}</div>
+                    <div class="col-span-2"><strong>Remarks:</strong> ${escapeHTML(v.remarks)}</div>
+                `;
+            }
+
+            document.getElementById('pv-prepared').innerText = `Prepared By: ${v.prep || v.recby || 'N/A'}`;
+            document.getElementById('pv-authorized').innerText = `Authorized By: ${v.auth || 'N/A'}`;
+            document.getElementById('pv-signature').innerText = 'Signature / Stamp';
+
+            document.getElementById('voucher-preview-modal').classList.remove('hidden');
+        },
+
+        closeVoucherPreview: function() {
+            document.getElementById('voucher-preview-modal').classList.add('hidden');
+        },
+
+        downloadVoucherPDF: function() {
+            const element = document.getElementById('printable-voucher-box');
+            const opt = {
+                margin:       10,
+                filename:     'Voucher_Challan.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(element).set(opt).save();
+        },
+
+        deleteVoucher: function(index) {
+            if (confirm('Are you sure you want to delete this record?')) {
+                dbUsers[activeUser].vouchers.splice(index, 1);
+                saveToLocalStorage();
+                this.renderVouchersTable();
             }
         },
 
@@ -497,7 +721,7 @@ const POSApp = (function() {
                 }
 
                 const currentTime = Date.now();
-                if (currentTime - lastKeyTime > 50) { barcodeBuffer = ''; }
+                if (currentTime - lastKeyTime > 50) barcodeBuffer = '';
                 lastKeyTime = currentTime;
 
                 if (e.key === 'Enter') {
@@ -589,12 +813,7 @@ const POSApp = (function() {
                             <br><span class="text-xs text-slate-400 font-mono">SKU: ${escapeHTML(item.barcode)}</span>
                             ${isLowStock ? '<span class="ml-2 bg-rose-100 text-rose-700 font-bold px-2 py-0.5 rounded text-[10px]">LOW STOCK</span>' : ''}
                         </td>
-                        <td class="p-4">
-                            <span class="${isLowStock ? 'text-rose-600 font-bold' : 'text-slate-700'}">
-                                ${item.qty} ${escapeHTML(item.unit)}
-                            </span>
-                            <span class="text-[10px] text-slate-400 block">Min: ${threshold}</span>
-                        </td>
+                        <td class="p-4"><span class="${isLowStock ? 'text-rose-600 font-bold' : 'text-slate-700'}">${item.qty} ${escapeHTML(item.unit)}</span></td>
                         <td class="p-4">${item.buy.toFixed(2)} TK</td>
                         <td class="p-4 font-semibold text-indigo-600">${item.sell.toFixed(2)} TK</td>
                         <td class="p-4 text-red-500">-${item.discount.toFixed(2)} TK</td>
@@ -729,7 +948,7 @@ const POSApp = (function() {
             });
 
             const newStatement = {
-                date: new Date().toLocaleString(), total: totalBill, paid: paidAmount, due: dueAmount,
+                date: new Date().toLocaleString().split(',')[0], total: totalBill, paid: paidAmount, due: dueAmount,
                 method: receiveStatus === 'Unpaid' ? 'Unpaid Ledger' : payMethod
             };
             dbUsers[activeUser].statements.push(newStatement);
