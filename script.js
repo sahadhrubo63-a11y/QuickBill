@@ -568,12 +568,14 @@ const POSApp = (function() {
             document.getElementById('pv-voucher-number').innerText = v.uniqueNum;
             document.getElementById('pv-date').innerText = v.date;
 
-            // Load Shop Logo reliably
             const logoElement = document.getElementById('pv-shop-logo');
-            if (activeUser && dbUsers[activeUser] && dbUsers[activeUser].dp) {
-                logoElement.src = dbUsers[activeUser].dp;
+            const currentUserData = dbUsers[activeUser];
+            
+            if (currentUserData && currentUserData.dp && currentUserData.dp.trim() !== "") {
+                logoElement.src = currentUserData.dp;
                 logoElement.classList.remove('hidden');
             } else {
+                logoElement.src = "";
                 logoElement.classList.add('hidden');
             }
 
@@ -629,45 +631,10 @@ const POSApp = (function() {
             document.getElementById('voucher-preview-modal').classList.add('hidden');
         },
 
-        // 🖨️ Safe Printable Engine via Hidden Iframe (Does not mess up main DOM)
         printVoucher: function() {
-            const printContent = document.getElementById('printable-voucher-box').outerHTML;
-            
-            let printFrame = document.getElementById('print-iframe');
-            if (!printFrame) {
-                printFrame = document.createElement('iframe');
-                printFrame.id = 'print-iframe';
-                printFrame.style.position = 'absolute';
-                printFrame.style.top = '-9999px';
-                printFrame.style.left = '-9999px';
-                document.body.appendChild(printFrame);
-            }
-
-            const frameDoc = printFrame.contentWindow || printFrame.contentDocument.document || printFrame.contentDocument;
-            frameDoc.document.open();
-            frameDoc.document.write(`
-                <html>
-                    <head>
-                        <title>Print Voucher</title>
-                        <script src="https://cdn.tailwindcss.com"></script>
-                        <style>
-                            body { font-family: 'Inter', sans-serif; padding: 20px; }
-                        </style>
-                    </head>
-                    <body>
-                        ${printContent}
-                    </body>
-                </html>
-            `);
-            frameDoc.document.close();
-
-            setTimeout(() => {
-                printFrame.contentWindow.focus();
-                printFrame.contentWindow.print();
-            }, 500);
+            window.print();
         },
 
-        // 📥 PDF Generation Engine
         downloadVoucherPDF: function() {
             const element = document.getElementById('printable-voucher-box');
             const opt = {
