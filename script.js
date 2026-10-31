@@ -1,16 +1,37 @@
 /**
- * Enterprise POS Engine Namespace with Vouchers, Challans, OTP & Audit Ledgers
+ * Firebase Cloud Configuration & POS Engine Namespace
  */
+const firebaseConfig = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 const POSApp = (function() {
-    let activeUser = null;
-    let dbUsers = JSON.parse(localStorage.getItem('pos_users')) || {};
+    let currentUser = null;
+    let userData = {
+        company: "My Business",
+        category: "Retail",
+        inventory: [],
+        statements: [],
+        vouchers: [],
+        documents: [],
+        address: "",
+        helpline: "",
+        dp: ""
+    };
     let cart = [];
     let tempProfileDpBase64 = "";
-
-    let tempSignupData = null;
-    let signupGeneratedOTP = "";
-    let forgotPasswordOTP = "";
-    let forgotEmailAccount = "";
 
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
@@ -25,8 +46,28 @@ const POSApp = (function() {
             .replace(/'/g, '&#039;');
     }
 
-    function saveToLocalStorage() {
-        localStorage.setItem('pos_users', JSON.stringify(dbUsers));
+    async function saveUserDataToCloud() {
+        if (!currentUser) return;
+        try {
+            await db.collection("users").doc(currentUser.uid).set(userData, { merge: true });
+        } catch (e) {
+            console.error("Cloud sync error: ", e);
+        }
+    }
+
+    async function fetchUserDataFromCloud(uid) {
+        try {
+            const docRef = await db.collection("users").doc(uid).get();
+            if (docRef.exists) {
+                userData = docRef.data();
+                if (!userData.inventory) userData.inventory = [];
+                if (!userData.statements) userData.statements = [];
+                if (!userData.vouchers) userData.vouchers = [];
+                if (!userData.documents) userData.documents = [];
+            }
+        } catch (e) {
+            console.error("Error fetching cloud data: ", e);
+        }
     }
 
     function playBeepSound() {
@@ -48,13 +89,24 @@ const POSApp = (function() {
                 oscillator.stop(audioCtx.currentTime + 0.08);
             }
         } catch(e) {
-            console.log('Audio Context suppressed or not allowed.');
+            console.log('Audio Context suppressed.');
         }
     }
 
     return {
         init: function() {
-            this.checkAutoLogin();
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    await fetchUserDataFromCloud(user.uid);
+                    this.loadApplication();
+                } else {
+                    currentUser = null;
+                    document.getElementById('app-container').classList.add('hidden');
+                    document.getElementById('auth-container').classList.remove('hidden');
+                    this.showAuthScreen('login-card');
+                }
+            });
             this.initBarcodeScannerListener();
         },
 
@@ -63,14 +115,6 @@ const POSApp = (function() {
             document.getElementById('signup-card').classList.add('hidden');
             document.getElementById('forgot-card').classList.add('hidden');
             document.getElementById(screenId).classList.remove('hidden');
-
-            if(screenId === 'signup-card') {
-                document.getElementById('signup-form-step1').classList.remove('hidden');
-                document.getElementById('signup-form-step2').classList.add('hidden');
-            } else if(screenId === 'forgot-card') {
-                document.getElementById('forgot-form-step1').classList.remove('hidden');
-                document.getElementById('forgot-form-step2').classList.add('hidden');
-            }
         },
 
         togglePasswordVisibility: function(inputId) {
@@ -78,141 +122,72 @@ const POSApp = (function() {
             input.type = input.type === "password" ? "text" : "password";
         },
 
-        checkPasswordStrength: function(inputId, indicatorId) {
-            const password = document.getElementById(inputId).value;
-            const ind = document.getElementById(indicatorId);
-            ind.innerHTML = `
-                <div class="${/[A-Z]/.test(password) ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Uppercase letter</div>
-                <div class="${/[a-z]/.test(password) ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Lowercase letter</div>
-                <div class="${/\d/.test(password) ? 'text-emerald-600' : 'text-slate-400'}">✓ At least 1 Number</div>
-                <div class="${password.length >= 8 ? 'text-emerald-600' : 'text-slate-400'}">✓ Min 8 characters</div>
-            `;
-        },
-
-        initiateSignupOTP: function() {
+        handleSignup: async function() {
             const company = document.getElementById('reg-company').value.trim();
             const email = document.getElementById('reg-email').value.trim().toLowerCase();
             const category = document.getElementById('reg-category').value.trim();
-            const username = document.getElementById('reg-username').value.trim();
             const password = document.getElementById('reg-password').value;
 
-            if (!company || !email || !username || !password) {
+            if (!company || !email || !password) {
                 alert('All required fields must be completed!');
                 return;
             }
 
-            if (dbUsers[username]) {
-                alert('Username is already taken!');
-                return;
-            }
-
-            tempSignupData = { company, email, category, username, password };
-            signupGeneratedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-
-            alert(`[EMAIL INBOX SIMULATION]\n\nOTP sent to ${email}.\nYour Verification Code is: ${signupGeneratedOTP}`);
-
-            document.getElementById('otp-sent-email-display').innerText = email;
-            document.getElementById('signup-form-step1').classList.add('hidden');
-            document.getElementById('signup-form-step2').classList.remove('hidden');
-        },
-
-        verifySignupOTP: function() {
-            const enteredOTP = document.getElementById('reg-otp-input').value.trim();
-            if (enteredOTP !== signupGeneratedOTP) {
-                alert('Invalid OTP code!');
-                return;
-            }
-
-            const { username, password, company, category, email } = tempSignupData;
-            dbUsers[username] = {
-                username, email, password, company, category, inventory: [], statements: [],
-                vouchers: [], address: "", helpline: "", dp: "", documents: []
-            };
-
-            saveToLocalStorage();
-            alert('Account created successfully! Please Login.');
-            tempSignupData = null;
-            this.showAuthScreen('login-card');
-        },
-
-        sendForgotOTP: function() {
-            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
-            const userEntry = Object.values(dbUsers).find(u => u.email === email);
-
-            if (!userEntry) {
-                alert('No registered account found with this email!');
-                return;
-            }
-
-            forgotEmailAccount = email;
-            forgotPasswordOTP = Math.floor(100000 + Math.random() * 900000).toString();
-
-            alert(`[EMAIL INBOX SIMULATION]\n\nPassword recovery requested for ${email}.\nYour Reset OTP is: ${forgotPasswordOTP}`);
-
-            document.getElementById('forgot-email-display').innerText = email;
-            document.getElementById('forgot-form-step1').classList.add('hidden');
-            document.getElementById('forgot-form-step2').classList.remove('hidden');
-        },
-
-        resetPassword: function() {
-            const enteredOTP = document.getElementById('forgot-otp-input').value.trim();
-            const newPassword = document.getElementById('forgot-new-password').value;
-
-            if (enteredOTP !== forgotPasswordOTP) {
-                alert('Invalid Reset OTP code!');
-                return;
-            }
-
-            const username = Object.keys(dbUsers).find(key => dbUsers[key].email === forgotEmailAccount);
-            if (username && dbUsers[username]) {
-                dbUsers[username].password = newPassword;
-                saveToLocalStorage();
-                alert('Password reset successful! Please login.');
-                this.showAuthScreen('login-card');
+            try {
+                const res = await auth.createUserWithEmailAndPassword(email, password);
+                currentUser = res.user;
+                userData = {
+                    company,
+                    category,
+                    email,
+                    inventory: [],
+                    statements: [],
+                    vouchers: [],
+                    documents: [],
+                    address: "",
+                    helpline: "",
+                    dp: ""
+                };
+                await saveUserDataToCloud();
+                alert('Cloud account created successfully!');
+            } catch (error) {
+                alert('Signup failed: ' + error.message);
             }
         },
 
-        handleLogin: function() {
-            const userOrEmail = document.getElementById('login-username').value.trim().toLowerCase();
+        handleLogin: async function() {
+            const email = document.getElementById('login-email').value.trim().toLowerCase();
             const pass = document.getElementById('login-password').value;
 
-            const usernameKey = Object.keys(dbUsers).find(u => u.toLowerCase() === userOrEmail || (dbUsers[u].email && dbUsers[u].email.toLowerCase() === userOrEmail));
-
-            if (usernameKey && dbUsers[usernameKey].password === pass) {
-                activeUser = usernameKey;
-                localStorage.setItem('pos_active_user', activeUser);
-                this.loadApplication();
-            } else { 
-                alert('Invalid authentication credentials!'); 
+            try {
+                await auth.signInWithEmailAndPassword(email, pass);
+            } catch (error) {
+                alert('Login failed: ' + error.message);
             }
         },
 
-        checkAutoLogin: function() {
-            const savedUser = localStorage.getItem('pos_active_user');
-            if (savedUser && dbUsers[savedUser]) { 
-                activeUser = savedUser; 
-                this.loadApplication(); 
+        handleForgotPassword: async function() {
+            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+            if (!email) { alert('Enter email address!'); return; }
+            try {
+                await auth.sendPasswordResetEmail(email);
+                alert('Password reset email sent! Check your inbox.');
+                this.showAuthScreen('login-card');
+            } catch (error) {
+                alert('Error: ' + error.message);
             }
         },
 
-        handleLogout: function() {
-            activeUser = null;
-            localStorage.removeItem('pos_active_user');
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('auth-container').classList.remove('hidden');
-            this.showAuthScreen('login-card');
+        handleLogout: async function() {
+            await auth.signOut();
         },
 
         loadApplication: function() {
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
-            const userData = dbUsers[activeUser];
 
-            if (!userData.documents) userData.documents = [];
-            if (!userData.vouchers) userData.vouchers = [];
-
-            document.getElementById('app-company-name').innerText = userData.company;
-            document.getElementById('app-username').innerText = `User: ${userData.username}`;
+            document.getElementById('app-company-name').innerText = userData.company || "My Business";
+            document.getElementById('app-username').innerText = currentUser.email;
             
             if(userData.dp) {
                 document.getElementById('sidebar-dp').src = userData.dp;
@@ -224,7 +199,7 @@ const POSApp = (function() {
             } else {
                 document.getElementById('sidebar-dp').classList.add('hidden');
                 document.getElementById('sidebar-initial-logo').classList.remove('hidden');
-                document.getElementById('sidebar-initial-logo').innerText = userData.company.substring(0, 1).toUpperCase();
+                document.getElementById('sidebar-initial-logo').innerText = (userData.company || "P").substring(0, 1).toUpperCase();
             }
             document.getElementById('prof-address').value = userData.address || "";
             document.getElementById('prof-helpline').value = userData.helpline || "";
@@ -255,19 +230,19 @@ const POSApp = (function() {
             }
         },
 
-        saveProfileConfiguration: function() {
-            dbUsers[activeUser].address = document.getElementById('prof-address').value.trim();
-            dbUsers[activeUser].helpline = document.getElementById('prof-helpline').value.trim();
+        saveProfileConfiguration: async function() {
+            userData.address = document.getElementById('prof-address').value.trim();
+            userData.helpline = document.getElementById('prof-helpline').value.trim();
             if (tempProfileDpBase64) {
-                dbUsers[activeUser].dp = tempProfileDpBase64;
+                userData.dp = tempProfileDpBase64;
             }
-            saveToLocalStorage();
-            alert('Profile Settings successfully updated!');
+            await saveUserDataToCloud();
+            alert('Profile Settings successfully updated & synced to cloud!');
             this.loadApplication();
         },
 
         /* BUSINESS DOCUMENTS MANAGEMENT */
-        uploadBusinessDocument: function() {
+        uploadBusinessDocument: async function() {
             const titleInput = document.getElementById('doc-title');
             const fileInput = document.getElementById('doc-file-input');
             const title = titleInput.value.trim();
@@ -279,29 +254,27 @@ const POSApp = (function() {
             }
 
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 const base64Data = e.target.result;
-                if (!dbUsers[activeUser].documents) {
-                    dbUsers[activeUser].documents = [];
-                }
-                dbUsers[activeUser].documents.push({
+                if (!userData.documents) userData.documents = [];
+                userData.documents.push({
                     title: title,
                     fileData: base64Data,
                     fileType: file.type,
                     fileName: file.name
                 });
-                saveToLocalStorage();
+                await saveUserDataToCloud();
                 this.renderBusinessDocuments();
                 
                 titleInput.value = '';
                 fileInput.value = '';
-                alert('Document successfully uploaded!');
+                alert('Document successfully uploaded & synced!');
             };
             reader.readAsDataURL(file);
         },
 
         renderBusinessDocuments: function() {
-            const docs = dbUsers[activeUser].documents || [];
+            const docs = userData.documents || [];
             const tbody = document.getElementById('business-docs-table-body');
             tbody.innerHTML = '';
 
@@ -324,7 +297,7 @@ const POSApp = (function() {
         },
 
         viewDocument: function(index) {
-            const doc = dbUsers[activeUser].documents[index];
+            const doc = userData.documents[index];
             if (!doc) return;
 
             document.getElementById('modal-doc-title').innerText = doc.title;
@@ -344,7 +317,7 @@ const POSApp = (function() {
         },
 
         downloadDocument: function(index) {
-            const doc = dbUsers[activeUser].documents[index];
+            const doc = userData.documents[index];
             if (!doc) return;
 
             const a = document.createElement('a');
@@ -355,10 +328,10 @@ const POSApp = (function() {
             document.body.removeChild(a);
         },
 
-        deleteDocument: function(index) {
+        deleteDocument: async function(index) {
             if (confirm('Are you sure you want to delete this document?')) {
-                dbUsers[activeUser].documents.splice(index, 1);
-                saveToLocalStorage();
+                userData.documents.splice(index, 1);
+                await saveUserDataToCloud();
                 this.renderBusinessDocuments();
             }
         },
@@ -376,7 +349,7 @@ const POSApp = (function() {
         renderVoucherFormFields: function() {
             const type = document.getElementById('v-type-select').value;
             const container = document.getElementById('voucher-dynamic-fields');
-            const defaultBusName = dbUsers[activeUser].company || '';
+            const defaultBusName = userData.company || '';
             const uniqueNum = type === 'Challan' ? 'CH-' + Math.floor(1000 + Math.random() * 9000) : (type === 'Credit Voucher' ? 'CR-' + Math.floor(1000 + Math.random() * 9000) : 'DR-' + Math.floor(1000 + Math.random() * 9000));
             const todayStr = new Date().toISOString().split('T')[0];
 
@@ -393,7 +366,7 @@ const POSApp = (function() {
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount (৳)</label><input type="number" step="any" id="cv-amount" class="w-full border p-2 rounded text-sm" placeholder="0.00"></div>
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount in Words</label><input type="text" id="cv-words" class="w-full border p-2 rounded text-sm" placeholder="Taka in words"></div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="cv-prep" class="w-full border p-2 rounded text-sm" value="${dbUsers[activeUser].username}"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="cv-prep" class="w-full border p-2 rounded text-sm" value="${currentUser.email}"></div>
                         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Authorized By</label><input type="text" id="cv-auth" class="w-full border p-2 rounded text-sm" placeholder="Manager Name"></div>
                     </div>
                 `;
@@ -411,7 +384,7 @@ const POSApp = (function() {
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount (৳)</label><input type="number" step="any" id="dv-amount" class="w-full border p-2 rounded text-sm" placeholder="0.00"></div>
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount in Words</label><input type="text" id="dv-words" class="w-full border p-2 rounded text-sm" placeholder="Taka in words"></div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="dv-prep" class="w-full border p-2 rounded text-sm" value="${dbUsers[activeUser].username}"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="dv-prep" class="w-full border p-2 rounded text-sm" value="${currentUser.email}"></div>
                         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Authorized By</label><input type="text" id="dv-auth" class="w-full border p-2 rounded text-sm" placeholder="Manager Name"></div>
                     </div>
                 `;
@@ -452,7 +425,7 @@ const POSApp = (function() {
             }
         },
 
-        saveAndGenerateVoucher: function() {
+        saveAndGenerateVoucher: async function() {
             const type = document.getElementById('v-type-select').value;
             let record = { type };
 
@@ -505,15 +478,16 @@ const POSApp = (function() {
                 record.auth = document.getElementById('ch-auth').value;
             }
 
-            dbUsers[activeUser].vouchers.push(record);
-            saveToLocalStorage();
+            if (!userData.vouchers) userData.vouchers = [];
+            userData.vouchers.push(record);
+            await saveUserDataToCloud();
             this.closeVoucherModal();
             this.renderVouchersTable();
             this.previewVoucherObject(record);
         },
 
         renderVouchersTable: function(filteredList = null) {
-            const vouchers = filteredList || dbUsers[activeUser].vouchers || [];
+            const vouchers = filteredList || userData.vouchers || [];
             const tbody = document.getElementById('vouchers-table-body');
             tbody.innerHTML = '';
 
@@ -546,7 +520,7 @@ const POSApp = (function() {
             const filterType = document.getElementById('voucher-filter-type').value;
             const searchDate = document.getElementById('voucher-search-date').value;
 
-            const allVouchers = dbUsers[activeUser].vouchers || [];
+            const allVouchers = userData.vouchers || [];
             const filtered = allVouchers.filter(v => {
                 const matchNum = searchNum === '' || v.uniqueNum.toLowerCase().includes(searchNum);
                 const matchType = filterType === 'All' || v.type === filterType;
@@ -558,7 +532,7 @@ const POSApp = (function() {
         },
 
         previewVoucherByIndex: function(index) {
-            const v = dbUsers[activeUser].vouchers[index];
+            const v = userData.vouchers[index];
             if (v) this.previewVoucherObject(v);
         },
 
@@ -569,10 +543,8 @@ const POSApp = (function() {
             document.getElementById('pv-date').innerText = v.date;
 
             const logoElement = document.getElementById('pv-shop-logo');
-            const currentUserData = dbUsers[activeUser];
-            
-            if (currentUserData && currentUserData.dp && currentUserData.dp.trim() !== "") {
-                logoElement.src = currentUserData.dp;
+            if (userData && userData.dp && userData.dp.trim() !== "") {
+                logoElement.src = userData.dp;
                 logoElement.classList.remove('hidden');
             } else {
                 logoElement.src = "";
@@ -644,18 +616,17 @@ const POSApp = (function() {
                 html2canvas:  { scale: 2, useCORS: true, allowTaint: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
-            
             if (typeof html2pdf !== 'undefined') {
                 html2pdf().set(opt).from(element).save();
             } else {
-                alert('PDF Generator library is loading. Please try again in 2 seconds.');
+                alert('PDF library loading...');
             }
         },
 
-        deleteVoucher: function(index) {
+        deleteVoucher: async function(index) {
             if (confirm('Are you sure you want to delete this record?')) {
-                dbUsers[activeUser].vouchers.splice(index, 1);
-                saveToLocalStorage();
+                userData.vouchers.splice(index, 1);
+                await saveUserDataToCloud();
                 this.renderVouchersTable();
             }
         },
@@ -665,7 +636,7 @@ const POSApp = (function() {
             const select = document.getElementById('bill-product-select');
             const badge = document.getElementById('pos-unit-badge');
             if (select.value === "") { badge.innerText = "Unit"; return; }
-            badge.innerText = dbUsers[activeUser].inventory[select.value].unit;
+            badge.innerText = userData.inventory[select.value].unit;
             this.calculateLivePOSBreakdown();
         },
 
@@ -674,7 +645,7 @@ const POSApp = (function() {
             const qty = parseFloat(document.getElementById('bill-qty-input').value) || 0;
             const panel = document.getElementById('live-calculation-panel');
             if (select.value === "" || qty <= 0) { panel.classList.add('hidden'); return; }
-            const item = dbUsers[activeUser].inventory[select.value];
+            const item = userData.inventory[select.value];
             panel.classList.remove('hidden');
             document.getElementById('live-unit-price').innerText = `${item.sell.toFixed(2)} TK`;
             document.getElementById('live-subtotal').innerText = `${(item.sell * qty).toFixed(2)} TK`;
@@ -706,7 +677,7 @@ const POSApp = (function() {
         },
 
         executeAddToCartProcessing: function(invIndex, quantitativeVolume) {
-            const item = dbUsers[activeUser].inventory[invIndex];
+            const item = userData.inventory[invIndex];
             if (!item) return;
 
             if (quantitativeVolume > item.qty) { 
@@ -738,9 +709,7 @@ const POSApp = (function() {
         initBarcodeScannerListener: function() {
             const self = this;
             window.addEventListener('keydown', function(e) {
-                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
-                    if (document.activeElement.id === 'reg-otp-input' || document.activeElement.id === 'forgot-otp-input') return;
-                }
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
 
                 const currentTime = Date.now();
                 if (currentTime - lastKeyTime > 50) barcodeBuffer = '';
@@ -759,8 +728,8 @@ const POSApp = (function() {
         },
 
         processHardwareScannerStroke: function(scannedSkuCode) {
-            if (!activeUser || !dbUsers[activeUser]) return;
-            const inventory = dbUsers[activeUser].inventory || [];
+            if (!currentUser) return;
+            const inventory = userData.inventory || [];
             const index = inventory.findIndex(item => item.barcode === scannedSkuCode);
 
             if (index === -1) {
@@ -815,7 +784,7 @@ const POSApp = (function() {
         },
 
         renderInventory: function() {
-            const items = dbUsers[activeUser].inventory || [];
+            const items = userData.inventory || [];
             const tbody = document.getElementById('inventory-table-body');
             tbody.innerHTML = '';
             
@@ -865,8 +834,8 @@ const POSApp = (function() {
         },
 
         checkLowStockAlerts: function() {
-            if (!activeUser || !dbUsers[activeUser]) return;
-            const items = dbUsers[activeUser].inventory || [];
+            if (!currentUser) return;
+            const items = userData.inventory || [];
             const lowStockItems = items.filter(item => item.qty <= (item.minStock || 5));
             const banner = document.getElementById('low-stock-alert-banner');
             const msgElement = document.getElementById('low-stock-alert-message');
@@ -882,15 +851,15 @@ const POSApp = (function() {
             }
         },
 
-        deleteInventoryItem: function(index) {
+        deleteInventoryItem: async function(index) {
             if (confirm('Are you sure you want to delete this product?')) {
-                dbUsers[activeUser].inventory.splice(index, 1);
-                saveToLocalStorage();
+                userData.inventory.splice(index, 1);
+                await saveUserDataToCloud();
                 this.renderInventory();
             }
         },
 
-        handleSaveProduct: function() {
+        handleSaveProduct: async function() {
             const name = document.getElementById('inv-name').value.trim();
             const skuInput = document.getElementById('inv-sku').value.trim();
             const qty = parseFloat(document.getElementById('inv-qty').value);
@@ -908,8 +877,9 @@ const POSApp = (function() {
             }
             const barcode = skuInput ? skuInput : "SKU" + Math.floor(10000 + Math.random() * 90000);
 
-            dbUsers[activeUser].inventory.push({ name, qty, unit, buy, sell, discount, vat, gift, barcode, minStock });
-            saveToLocalStorage();
+            if (!userData.inventory) userData.inventory = [];
+            userData.inventory.push({ name, qty, unit, buy, sell, discount, vat, gift, barcode, minStock });
+            await saveUserDataToCloud();
             this.renderInventory();
             
             document.getElementById('inv-name').value = ''; 
@@ -953,7 +923,7 @@ const POSApp = (function() {
             img.src = URL.createObjectURL(svgBlob);
         },
 
-        processFinalInvoice: function() {
+        processFinalInvoice: async function() {
             if (cart.length === 0) { alert('Cart is currently empty!'); return; }
             const payMethod = document.getElementById('bill-pay-method').value;
             const receiveStatus = document.getElementById('bill-receive-status').value;
@@ -964,8 +934,8 @@ const POSApp = (function() {
             const dueAmount = Math.max(0, totalBill - paidAmount);
 
             cart.forEach(item => { 
-                if(dbUsers[activeUser].inventory[item.inventoryIndex]) {
-                    dbUsers[activeUser].inventory[item.inventoryIndex].qty -= item.qty; 
+                if(userData.inventory[item.inventoryIndex]) {
+                    userData.inventory[item.inventoryIndex].qty -= item.qty; 
                 }
             });
 
@@ -973,14 +943,14 @@ const POSApp = (function() {
                 date: new Date().toLocaleString().split(',')[0], total: totalBill, paid: paidAmount, due: dueAmount,
                 method: receiveStatus === 'Unpaid' ? 'Unpaid Ledger' : payMethod
             };
-            dbUsers[activeUser].statements.push(newStatement);
-            saveToLocalStorage();
+            if (!userData.statements) userData.statements = [];
+            userData.statements.push(newStatement);
+            await saveUserDataToCloud();
 
-            const shopProfile = dbUsers[activeUser];
-            document.getElementById('bill-shop-name').innerText = shopProfile.company;
-            document.getElementById('bill-shop-cat').innerText = shopProfile.category || "Retail Counter";
-            document.getElementById('bill-shop-address').innerText = shopProfile.address || "";
-            document.getElementById('bill-shop-helpline').innerText = shopProfile.helpline ? `Helpline: ${shopProfile.helpline}` : "";
+            document.getElementById('bill-shop-name').innerText = userData.company;
+            document.getElementById('bill-shop-cat').innerText = userData.category || "Retail Counter";
+            document.getElementById('bill-shop-address').innerText = userData.address || "";
+            document.getElementById('bill-shop-helpline').innerText = userData.helpline ? `Helpline: ${userData.helpline}` : "";
             document.getElementById('bill-date').innerText = newStatement.date;
             document.getElementById('bill-payment-type').innerText = newStatement.method;
 
@@ -1023,7 +993,7 @@ const POSApp = (function() {
         },
 
         renderStatements: function() {
-            const statements = dbUsers[activeUser].statements || [];
+            const statements = userData.statements || [];
             const tbody = document.getElementById('statement-table-body');
             tbody.innerHTML = '';
             let s=0, r=0, d=0;
@@ -1045,7 +1015,7 @@ const POSApp = (function() {
 
         handleDownloadCSV: function() {
             let csv = 'Timestamp,Gross Total,Paid Amount,Due,Method\n';
-            (dbUsers[activeUser].statements || []).forEach(st => { 
+            (userData.statements || []).forEach(st => { 
                 csv += `"${st.date}",${st.total},${st.paid},${st.due},"${st.method}"\n`; 
             });
             const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;' });
