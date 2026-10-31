@@ -34,7 +34,6 @@ body {
         visibility: hidden;
     }
     
-    /* Voucher / Challan Print View */
     #voucher-preview-modal, #voucher-preview-modal * {
         visibility: visible;
     }
@@ -47,7 +46,6 @@ body {
         box-shadow: none !important;
     }
     
-    /* POS Bill Print View */
     #print-area, #print-area * {
         visibility: visible;
     }
