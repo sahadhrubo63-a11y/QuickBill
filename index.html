@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business POS & Inventory Pro Suite - Admin & Portal</title>
+    <title>Business POS & Inventory Pro Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Inter Font -->
@@ -17,10 +17,10 @@
 </head>
 <body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
 
-    <!-- AUTHENTICATION & PORTAL CONTAINER -->
+    <!-- AUTHENTICATION CONTAINER -->
     <div id="auth-container" class="flex-grow flex items-center justify-center p-4">
         
-        <!-- LOGIN CARD (Software Login & Admin Panel Toggle) -->
+        <!-- LOGIN CARD -->
         <div id="login-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 transition-all">
             <div class="text-center mb-8">
                 <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">POS PRO v5.0</span>
@@ -30,7 +30,7 @@
             <form onsubmit="event.preventDefault(); POSApp.handleLogin();" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username</label>
-                    <input type="text" id="login-username" required class="w-full border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="Enter your username">
+                    <input type="text" id="login-username" required class="w-full border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="Enter username">
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
@@ -44,30 +44,30 @@
                 <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-200 interactive-hover">Login</button>
             </form>
             <div class="text-center mt-6 space-y-2">
-                <p class="text-sm text-slate-600">Want to register new business? <button onclick="POSApp.showAuthScreen('signup-card')" class="text-emerald-600 font-semibold hover:underline">Dedicated Portal Registration</button></p>
+                <p class="text-sm text-slate-600">New business? <button onclick="POSApp.showAuthScreen('signup-card')" class="text-indigo-600 font-semibold hover:underline">Dedicated Portal Registration</button></p>
                 <div>
-                    <button onclick="POSApp.showAuthScreen('admin-login-card')" class="text-xs text-indigo-600 font-bold hover:underline">🔐 Admin Panel Access</button>
+                    <a href="admin.html" target="_blank" class="text-xs text-amber-600 font-bold hover:underline">🔐 Open Admin Panel</a>
                 </div>
             </div>
         </div>
 
-        <!-- DEDICATED PORTAL REGISTRATION CARD (Mandatory Details & Files) -->
+        <!-- DEDICATED PORTAL SIGNUP CARD -->
         <div id="signup-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-slate-100 hidden transition-all max-h-[90vh] overflow-y-auto">
             <div class="text-center mb-6">
                 <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Dedicated Portal</span>
                 <h2 class="text-3xl font-bold text-slate-900 mt-2">Business Registration Form</h2>
-                <p class="text-sm text-slate-500 mt-1">Submit all mandatory details for admin verification. Credentials will be sent via email & phone.</p>
+                <p class="text-sm text-slate-500 mt-1">Submit mandatory details. Admin will verify and send credentials to your email/phone.</p>
             </div>
             
             <form onsubmit="event.preventDefault(); POSApp.submitRegistrationPortal();" class="space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Full Name *</label>
-                        <input type="text" id="portal-name" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Your Full Name">
+                        <input type="text" id="portal-name" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Your Name">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Desired Username *</label>
-                        <input type="text" id="portal-username" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Unique Username">
+                        <input type="text" id="portal-username" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Username">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Shop / Outlet / Company Name *</label>
@@ -90,20 +90,20 @@
                         <input type="date" id="portal-dob" required onchange="POSApp.calculateAgeFromDOB()" class="w-full border border-slate-200 p-2.5 rounded-lg text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Age (Auto Calculated)</label>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Age (Auto Count)</label>
                         <input type="text" id="portal-age" readonly class="w-full border border-slate-200 p-2.5 rounded-lg text-sm bg-slate-50 font-bold text-indigo-600" placeholder="Auto count age">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Current Address *</label>
-                        <input type="text" id="portal-address" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Shop / Outlet Address">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Address *</label>
+                        <input type="text" id="portal-address" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Shop Address">
                     </div>
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Home Address *</label>
-                        <input type="text" id="portal-home-address" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Residential Home Address">
+                        <input type="text" id="portal-home-address" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Home Address">
                     </div>
                     <div class="sm:col-span-2">
-                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Permanent Address (Based on NID/Passport) *</label>
-                        <input type="text" id="portal-perm-address" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Permanent Address as per NID/Passport">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Permanent Address (NID / Passport) *</label>
+                        <input type="text" id="portal-perm-address" required class="w-full border border-slate-200 p-2.5 rounded-lg text-sm" placeholder="Permanent Address">
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">District *</label>
@@ -130,32 +130,7 @@
                         <input type="file" id="portal-file-logo" accept="image/*" required class="w-full text-xs text-slate-500 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700">
                     </div>
                 </div>
-
-                <button type="submit" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-semibold hover:bg-emerald-700 transition text-sm shadow-md">Submit Registration for Verification</button>
-            </form>
-
-            <div class="text-center mt-4">
-                <button onclick="POSApp.showAuthScreen('login-card')" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Login</button>
-            </div>
-        </div>
-
-        <!-- ADMIN LOGIN CARD -->
-        <div id="admin-login-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 hidden transition-all">
-            <div class="text-center mb-6">
-                <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Restricted Area</span>
-                <h2 class="text-3xl font-bold text-slate-900 mt-2">Admin Panel Login</h2>
-                <p class="text-sm text-slate-500 mt-1">Enter admin credentials to review user applications</p>
-            </div>
-            <form onsubmit="event.preventDefault(); POSApp.handleAdminLogin();" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Admin Username</label>
-                    <input type="text" id="admin-user-input" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="admin">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Admin Password</label>
-                    <input type="password" id="admin-pass-input" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="••••••••">
-                </div>
-                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm">Login to Admin Panel</button>
+                <button type="submit" class="w-full bg-emerald-600 text-white p-3 rounded-lg font-semibold hover:bg-emerald-700 transition text-sm">Submit Registration</button>
             </form>
             <div class="text-center mt-4">
                 <button onclick="POSApp.showAuthScreen('login-card')" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Login</button>
@@ -163,40 +138,7 @@
         </div>
     </div>
 
-    <!-- ADMIN PANEL DASHBOARD (Dedicated Portal for Admin) -->
-    <div id="admin-panel-container" class="hidden flex-grow p-6 md:p-8 max-w-7xl mx-auto w-full">
-        <div class="flex justify-between items-center mb-6 border-b pb-4">
-            <div>
-                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-1 rounded">ADMINISTRATOR DASHBOARD</span>
-                <h1 class="text-2xl font-bold text-slate-900 mt-1">User Verification & Credential Management</h1>
-                <p class="text-sm text-slate-500">Review submitted records, verify documents, and assign username & password</p>
-            </div>
-            <button onclick="POSApp.handleAdminLogout()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Logout Admin</button>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="p-4 bg-slate-50 border-b font-bold text-sm text-slate-700 uppercase">Pending & Registered Applications</div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
-                        <tr>
-                            <th class="p-3">Applicant / Shop</th>
-                            <th class="p-3">Contact Info</th>
-                            <th class="p-3">DOB & Age</th>
-                            <th class="p-3">Addresses</th>
-                            <th class="p-3">Documents</th>
-                            <th class="p-3">Status / Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-applications-tbody" class="divide-y divide-slate-100">
-                        <tr><td colspan="6" class="p-8 text-center text-slate-400">No applications submitted yet.</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- MAIN APP WRAPPER (Software) -->
+    <!-- MAIN APP WRAPPER -->
     <div id="app-container" class="hidden flex-grow flex flex-col md:flex-row">
         <!-- SIDEBAR NAVIGATION -->
         <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 no-print">
@@ -617,10 +559,7 @@
                         <option value="Challan">Challan Voucher</option>
                     </select>
                 </div>
-
-                <!-- Dynamic Form Fields Container -->
                 <div id="voucher-dynamic-fields" class="space-y-3"></div>
-
                 <button onclick="POSApp.saveAndGenerateVoucher()" class="w-full bg-emerald-600 text-white p-3 rounded-xl font-bold hover:bg-emerald-700 transition">Save & Generate Voucher</button>
             </div>
         </div>
@@ -634,7 +573,6 @@
                 <button onclick="POSApp.closeVoucherPreview()" class="text-slate-500 font-bold hover:text-red-500">✕ Close</button>
             </div>
 
-            <!-- Printable Voucher Container -->
             <div id="printable-voucher-box" class="bg-white p-6 border border-slate-200 rounded-xl space-y-4 text-sm text-black">
                 <div class="text-center border-b pb-3 flex flex-col items-center">
                     <img id="pv-shop-logo" src="" class="w-16 h-16 object-contain rounded-lg mb-2 hidden" alt="Shop Logo">
@@ -643,9 +581,7 @@
                     <p class="text-xs text-slate-600 font-mono mt-0.5">Voucher No: <span id="pv-voucher-number" class="font-bold"></span></p>
                     <p class="text-xs text-slate-600">Date: <span id="pv-date"></span></p>
                 </div>
-                
                 <div id="pv-details-grid" class="grid grid-cols-2 gap-3 text-xs"></div>
-
                 <div class="border-t pt-3 flex justify-between items-center font-bold">
                     <span id="pv-amount-label">Amount:</span>
                     <span id="pv-amount-value" class="text-base text-indigo-600"></span>
@@ -653,17 +589,10 @@
                 <div class="text-xs italic text-slate-600">
                     <strong>In Words:</strong> <span id="pv-amount-words"></span>
                 </div>
-
                 <div class="grid grid-cols-3 pt-8 text-center text-xs">
-                    <div>
-                        <div class="border-t border-black pt-1 font-semibold" id="pv-prepared">Prepared By</div>
-                    </div>
-                    <div>
-                        <div class="border-t border-black pt-1 font-semibold" id="pv-authorized">Authorized By</div>
-                    </div>
-                    <div>
-                        <div class="border-t border-black pt-1 font-semibold" id="pv-signature">Signature / Stamp</div>
-                    </div>
+                    <div><div class="border-t border-black pt-1 font-semibold" id="pv-prepared">Prepared By</div></div>
+                    <div><div class="border-t border-black pt-1 font-semibold" id="pv-authorized">Authorized By</div></div>
+                    <div><div class="border-t border-black pt-1 font-semibold" id="pv-signature">Signature / Stamp</div></div>
                 </div>
             </div>
 
