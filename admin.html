@@ -10,120 +10,74 @@
 </head>
 <body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen font-['Inter']">
 
-    <!-- ADMIN LOGIN SECTION -->
+    <!-- ADMIN LOGIN -->
     <div id="admin-login-wrapper" class="flex-grow flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-200">
+        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border">
             <div class="text-center mb-6">
                 <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-bold uppercase">Restricted</span>
-                <h2 class="text-3xl font-bold text-slate-900 mt-2">Admin Panel Login</h2>
-                <p class="text-sm text-slate-500 mt-1">Manage and verify business applications</p>
+                <h2 class="text-3xl font-bold mt-2">Admin Panel Login</h2>
             </div>
             <form onsubmit="event.preventDefault(); AdminPanel.login();" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Admin Username</label>
-                    <input type="text" id="admin-user" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="admin">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
-                    <input type="password" id="admin-pass" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="••••••••">
-                </div>
-                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm shadow-md">Login to Admin Portal</button>
+                <input type="text" id="admin-user" required class="w-full border p-3 rounded-lg text-sm" placeholder="Username (admin)">
+                <input type="password" id="admin-pass" required class="w-full border p-3 rounded-lg text-sm" placeholder="Password (admin123)">
+                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700">Login</button>
             </form>
-            <div class="text-center mt-4">
-                <a href="index.html" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Main Software / Portal</a>
-            </div>
+            <div class="text-center mt-4"><a href="index.html" class="text-xs text-indigo-600 hover:underline">← Back to Software</a></div>
         </div>
     </div>
 
-    <!-- ADMIN DASHBOARD SECTION -->
+    <!-- ADMIN DASHBOARD -->
     <div id="admin-dashboard-wrapper" class="hidden flex-grow p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
         <div class="flex justify-between items-center border-b pb-4 bg-white p-6 rounded-2xl shadow-sm">
             <div>
                 <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase">Administrator Dashboard</span>
-                <h1 class="text-2xl font-bold text-slate-900 mt-1">User Verification & Management Center</h1>
-                <p class="text-sm text-slate-500">Review pending registrations, monitor approved users & activity stats</p>
+                <h1 class="text-2xl font-bold mt-1">User Verification & Management Center</h1>
             </div>
-            <div class="flex items-center space-x-3">
-                <a href="index.html" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-300 transition">Go to Software</a>
-                <button onclick="AdminPanel.logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition">Logout</button>
-            </div>
+            <button onclick="AdminPanel.logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Logout</button>
         </div>
 
-        <!-- TAB NAVIGATION FOR ADMIN -->
-        <div class="flex space-x-2 border-b border-slate-200 pb-2">
-            <button onclick="AdminPanel.switchTab('pending')" id="admin-btn-pending" class="px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white transition">Pending Requests (<span id="count-pending">0</span>)</button>
-            <button onclick="AdminPanel.switchTab('approved')" id="admin-btn-approved" class="px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-600 hover:bg-slate-100 transition">Approved Users (<span id="count-approved">0</span>)</button>
-            <button onclick="AdminPanel.switchTab('rejected')" id="admin-btn-rejected" class="px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-600 hover:bg-slate-100 transition">Rejected List (<span id="count-rejected">0</span>)</button>
+        <div class="flex space-x-2 border-b pb-2">
+            <button onclick="AdminPanel.switchTab('pending')" id="admin-btn-pending" class="px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white">Pending Requests (<span id="count-pending">0</span>)</button>
+            <button onclick="AdminPanel.switchTab('approved')" id="admin-btn-approved" class="px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-600">Approved Users (<span id="count-approved">0</span>)</button>
+            <button onclick="AdminPanel.switchTab('rejected')" id="admin-btn-rejected" class="px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-600">Rejected List (<span id="count-rejected">0</span>)</button>
         </div>
 
-        <!-- PENDING TAB CONTENT -->
+        <!-- PENDING TAB -->
         <div id="admin-tab-pending" class="admin-tab-content space-y-4">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-4 bg-slate-50 border-b font-bold text-sm text-slate-700 uppercase">Pending Verification Queue</div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
-                            <tr>
-                                <th class="p-4">Applicant / Shop</th>
-                                <th class="p-4">Contact Info</th>
-                                <th class="p-4">DOB & Age</th>
-                                <th class="p-4">Documents</th>
-                                <th class="p-4 text-center">Action / Assign Credentials</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-pending-body" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-100 uppercase text-xs"><tr><th class="p-4">Applicant / Shop</th><th class="p-4">Contact</th><th class="p-4">DOB & Age</th><th class="p-4 text-center">Action</th></tr></thead>
+                    <tbody id="table-pending-body" class="divide-y"></tbody>
+                </table>
             </div>
         </div>
 
-        <!-- APPROVED TAB CONTENT -->
+        <!-- APPROVED TAB -->
         <div id="admin-tab-approved" class="admin-tab-content hidden space-y-4">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-4 bg-emerald-50 border-b font-bold text-sm text-emerald-800 uppercase">Approved Active Users & Analytics</div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
-                            <tr>
-                                <th class="p-4">User & Shop Details</th>
-                                <th class="p-4">Assigned Username</th>
-                                <th class="p-4">Software View Count</th>
-                                <th class="p-4">Active Time Duration</th>
-                                <th class="p-4 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-approved-body" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-100 uppercase text-xs"><tr><th class="p-4">User & Shop</th><th class="p-4">Username</th><th class="p-4">Views</th><th class="p-4">Status / Delist Toggle</th></tr></thead>
+                    <tbody id="table-approved-body" class="divide-y"></tbody>
+                </table>
             </div>
         </div>
 
-        <!-- REJECTED TAB CONTENT -->
+        <!-- REJECTED TAB -->
         <div id="admin-tab-rejected" class="admin-tab-content hidden space-y-4">
-            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div class="p-4 bg-rose-50 border-b font-bold text-sm text-rose-800 uppercase">Rejected Applications</div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-slate-100 text-slate-600 uppercase text-xs">
-                            <tr>
-                                <th class="p-4">Applicant / Shop</th>
-                                <th class="p-4">Contact Info</th>
-                                <th class="p-4">Rejection Reason / Date</th>
-                                <th class="p-4 text-center">Remove / Delete</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-rejected-body" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
+            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-100 uppercase text-xs"><tr><th class="p-4">Applicant</th><th class="p-4">Contact</th><th class="p-4 text-center">Permanently Remove</th></tr></thead>
+                    <tbody id="table-rejected-body" class="divide-y"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    <!-- FULL SCREEN PROFILE ANIMATED MODAL -->
-    <div id="fullscreen-profile-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 transition-all duration-500 opacity-0 scale-95">
-        <div class="bg-white rounded-3xl max-w-3xl w-full p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto transform transition-all">
-            <button onclick="AdminPanel.closeFullscreenProfile()" class="absolute top-6 right-6 bg-slate-100 text-slate-700 w-10 h-10 rounded-full font-bold hover:bg-red-500 hover:text-white transition flex items-center justify-center">✕</button>
-            <div id="profile-modal-content" class="space-y-6"></div>
+    <!-- FULLSCREEN PROFILE MODAL -->
+    <div id="fullscreen-profile-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0 scale-95">
+        <div class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="AdminPanel.closeFullscreenProfile()" class="absolute top-6 right-6 bg-slate-100 w-10 h-10 rounded-full font-bold">✕</button>
+            <div id="profile-modal-content" class="space-y-4"></div>
         </div>
     </div>
 
