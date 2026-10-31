@@ -1,5 +1,5 @@
 /**
- * Firebase Cloud Configuration & POS Engine Namespace
+ * Enterprise POS Engine Namespace with Firebase Cloud Database Sync
  */
 const firebaseConfig = {
     apiKey: "AIzaSyDNookDÚc3J7oMJFxhLvv4_Vv9ia_pu7MY",
@@ -10,7 +10,7 @@ const firebaseConfig = {
     appId: "1:1075305184916:web:743a999b9087369185ha81"
 };
 
-// Initialize Firebase (Compat version)
+// Initialize Firebase Compat
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
