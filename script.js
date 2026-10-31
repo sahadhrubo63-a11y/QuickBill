@@ -2,15 +2,15 @@
  * Firebase Cloud Configuration & POS Engine Namespace
  */
 const firebaseConfig = {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDNookDÚc3J7oMJFxhLvv4_Vv9ia_pu7MY",
+    authDomain: "advancedmanager.firebaseapp.com",
+    projectId: "advancedmanager",
+    storageBucket: "advancedmanager.appspot.com",
+    messagingSenderId: "1075305184916",
+    appId: "1:1075305184916:web:743a999b9087369185ha81"
 };
 
-// Initialize Firebase
+// Initialize Firebase (Compat version)
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
