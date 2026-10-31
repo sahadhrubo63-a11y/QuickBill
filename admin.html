@@ -3,84 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - POS Pro</title>
+    <title>Business Portal & Admin Management Suite</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Inter Font -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-100 text-slate-800 flex flex-col min-h-screen font-['Inter']">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased">
 
-    <!-- ADMIN LOGIN -->
-    <div id="admin-login-wrapper" class="flex-grow flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border">
+    <!-- TOP NAVIGATION BAR -->
+    <header class="bg-slate-900 text-white shadow-md p-4 flex justify-between items-center no-print">
+        <div class="flex items-center space-x-3">
+            <span class="bg-indigo-600 text-white px-3 py-1 rounded-lg font-bold text-xs uppercase tracking-wider">PORTAL & ADMIN</span>
+            <h1 class="font-bold text-lg">POS Enterprise Gateway</h1>
+        </div>
+        <div class="space-x-3">
+            <button onclick="AdminPortal.switchView('user-portal')" id="nav-btn-portal" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">User Registration Portal</button>
+            <button onclick="AdminPortal.switchView('admin-login')" id="nav-btn-admin" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-700 transition">Admin Panel</button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+
+        <!-- ================= 1. USER DEDICATED REGISTRATION PORTAL ================= -->
+        <div id="view-user-portal" class="w-full max-w-3xl bg-white p-6 sm:p-10 rounded-2xl shadow-xl border border-slate-200 transition-all">
+            <div id="reg-form-wrapper">
+                <div class="text-center mb-8">
+                    <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Mandatory Onboarding</span>
+                    <h2 class="text-3xl font-bold text-slate-900 mt-2">Dedicated Business Registration</h2>
+                    <p class="text-sm text-slate-500 mt-1">Provide all official details below for verification and credential issuance.</p>
+                </div>
+
+                <form onsubmit="event.preventDefault(); AdminPortal.submitUserRegistration();" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Full Name (As per NID/Passport) *</label>
+                            <input type="text" id="p-name" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="e.g., John Doe">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Preferred Username *</label>
+                            <input type="text" id="p-username" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="Unique username">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Shop / Outlet / Company Name *</label>
+                            <input type="text" id="p-company" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="Business Name">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Business Category *</label>
+                            <input type="text" id="p-category" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="e.g., Grocery, Pharmacy, Retail">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Phone Number *</label>
+                            <input type="tel" id="p-phone" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="+8801XXXXXXXXX">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address *</label>
+                            <input type="email" id="p-email" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="name@company.com">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Date of Birth *</label>
+                            <input type="date" id="p-dob" required onchange="AdminPortal.calculateAge()" class="w-full border border-slate-200 p-3 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Calculated Age</label>
+                            <input type="text" id="p-age-display" readonly class="w-full border border-slate-100 bg-slate-50 p-3 rounded-lg text-sm font-bold text-indigo-600" placeholder="Auto calculated">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nationality *</label>
+                            <input type="text" id="p-nationality" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" value="Bangladeshi">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">District *</label>
+                            <input type="text" id="p-district" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="e.g., Khulna">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Shop / Outlet Address *</label>
+                            <input type="text" id="p-address" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="Shop Address">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Home Address *</label>
+                            <input type="text" id="p-home-address" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="Home Address">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Permanent Address (Based on NID/Passport) *</label>
+                        <input type="text" id="p-permanent-address" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="Permanent Address">
+                    </div>
+
+                    <!-- FILE UPLOADS MANDATORY SECTION -->
+                    <div class="border-t pt-4 space-y-4 bg-slate-50 p-4 rounded-xl border">
+                        <h3 class="font-bold text-slate-800 text-sm uppercase">Mandatory Document & Image Uploads</h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Upload Profile Picture *</label>
+                                <input type="file" id="p-file-pic" accept="image/png,image/jpeg" required class="w-full text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Upload NID or Passport *</label>
+                                <input type="file" id="p-file-nid" accept="image/png,image/jpeg,application/pdf" required class="w-full text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Upload Trade License *</label>
+                                <input type="file" id="p-file-trade" accept="image/png,image/jpeg,application/pdf" required class="w-full text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700">
+                            </div>
+                            <div>
+                                <label class="block font-semibold text-slate-600 mb-1">Upload Business Logo *</label>
+                                <input type="file" id="p-file-logo" accept="image/png,image/jpeg" required class="w-full text-slate-500 file:mr-2 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:text-indigo-700">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg text-center">Submit Registration for Verification</button>
+                </form>
+            </div>
+
+            <!-- SUCCESS BILLING-PAPER STYLE ANIMATED CONFIRMATION -->
+            <div id="reg-success-box" class="hidden text-center py-12 space-y-6 animate-pulse">
+                <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-4xl mx-auto shadow-inner">✓</div>
+                <h2 class="text-3xl font-bold text-slate-900">Thank you for your registration!</h2>
+                <div class="max-w-md mx-auto bg-slate-50 border border-slate-200 p-6 rounded-2xl text-sm text-slate-600 space-y-2 shadow-sm">
+                    <p class="font-semibold text-indigo-600">We received your registration details.</p>
+                    <p>Please wait for some time. If your registration is verified, we will send your username and password to your phone and email. Otherwise, if rejected, we will notify you accordingly.</p>
+                </div>
+                <button onclick="location.reload()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-700 transition">Submit Another Application</button>
+            </div>
+        </div>
+
+        <!-- ================= 2. ADMIN LOGIN & DASHBOARD ================= -->
+        <div id="view-admin-auth" class="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-slate-200 hidden">
             <div class="text-center mb-6">
-                <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-bold uppercase">Restricted</span>
-                <h2 class="text-3xl font-bold mt-2">Admin Panel Login</h2>
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase">Secure Management</span>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2">Admin Login</h2>
             </div>
-            <form onsubmit="event.preventDefault(); AdminPanel.login();" class="space-y-4">
-                <input type="text" id="admin-user" required class="w-full border p-3 rounded-lg text-sm" placeholder="Username (admin)">
-                <input type="password" id="admin-pass" required class="w-full border p-3 rounded-lg text-sm" placeholder="Password (admin123)">
-                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700">Login</button>
+            <form onsubmit="event.preventDefault(); AdminPortal.handleAdminLogin();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Admin Username</label>
+                    <input type="text" id="admin-user" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
+                    <input type="password" id="admin-pass" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition">Login to Admin Dashboard</button>
             </form>
-            <div class="text-center mt-4"><a href="index.html" class="text-xs text-indigo-600 hover:underline">← Back to Software</a></div>
+        </div>
+
+        <!-- ================= 3. ADMIN DASHBOARD PANEL ================= -->
+        <div id="view-admin-dashboard" class="w-full max-w-7xl bg-white p-6 sm:p-8 rounded-2xl shadow-xl border border-slate-200 hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-center border-b pb-4 gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900">Admin Management Dashboard</h2>
+                    <p class="text-sm text-slate-500">Review incoming applications, assign credentials, monitor user status and handle delisting.</p>
+                </div>
+                <button onclick="AdminPortal.handleAdminLogout()" class="bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-100 transition">Admin Logout</button>
+            </div>
+
+            <!-- TABS NAVIGATION -->
+            <div class="flex flex-wrap gap-2 border-b pb-3">
+                <button onclick="AdminPortal.switchAdminTab('tab-incoming')" id="adm-btn-incoming" class="px-4 py-2 rounded-lg text-xs font-bold bg-indigo-600 text-white transition">Incoming Requests (<span id="count-incoming">0</span>)</button>
+                <button onclick="AdminPortal.switchAdminTab('tab-approved')" id="adm-btn-approved" class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Approved Users (<span id="count-approved">0</span>)</button>
+                <button onclick="AdminPortal.switchAdminTab('tab-rejected')" id="adm-btn-rejected" class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Rejected Users (<span id="count-rejected">0</span>)</button>
+                <button onclick="AdminPortal.switchAdminTab('tab-delisted')" id="adm-btn-delisted" class="px-4 py-2 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition">Delisted Users (<span id="count-delisted">0</span>)</button>
+            </div>
+
+            <!-- TAB CONTENT CONTAINER -->
+            <div id="admin-tab-content-container">
+                <!-- INCOMING TABLE -->
+                <div id="tab-incoming" class="admin-tab space-y-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">Applicant Name</th>
+                                    <th class="p-3">Company / Shop</th>
+                                    <th class="p-3">Contact</th>
+                                    <th class="p-3">Category / District</th>
+                                    <th class="p-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-incoming-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- APPROVED TABLE -->
+                <div id="tab-approved" class="admin-tab hidden space-y-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">User & Company</th>
+                                    <th class="p-3">Assigned Username</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3">Active Time</th>
+                                    <th class="p-3">View Count</th>
+                                    <th class="p-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-approved-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REJECTED TABLE -->
+                <div id="tab-rejected" class="admin-tab hidden space-y-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">Applicant Name</th>
+                                    <th class="p-3">Company Name</th>
+                                    <th class="p-3">Email & Phone</th>
+                                    <th class="p-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-rejected-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- DELISTED TABLE -->
+                <div id="tab-delisted" class="admin-tab hidden space-y-4">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 text-slate-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3">User & Company</th>
+                                    <th class="p-3">Username</th>
+                                    <th class="p-3 text-center">Enlist Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-delisted-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- FULL SCREEN USER PROFILE MODAL WITH ANIMATION -->
+    <div id="profile-fullscreen-modal" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
+        <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto transform transition-transform scale-100 animate-in fade-in zoom-in duration-200">
+            <div class="flex justify-between items-center border-b pb-4">
+                <div class="flex items-center space-x-4">
+                    <img id="modal-user-dp" src="" class="w-16 h-16 rounded-2xl object-cover border-2 border-indigo-500 shadow-md" alt="DP">
+                    <div>
+                        <h3 id="modal-user-name" class="font-bold text-xl text-slate-900"></h3>
+                        <p id="modal-user-company" class="text-sm text-indigo-600 font-semibold"></p>
+                    </div>
+                </div>
+                <button onclick="AdminPortal.closeProfileModal()" class="w-10 h-10 rounded-full bg-slate-100 text-slate-600 font-bold hover:bg-red-100 hover:text-red-600 flex items-center justify-center transition">✕</button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm bg-slate-50 p-4 rounded-2xl border">
+                <div><strong>Username:</strong> <span id="m-username" class="font-mono text-indigo-600"></span></div>
+                <div><strong>Phone:</strong> <span id="m-phone"></span></div>
+                <div><strong>Email:</strong> <span id="m-email"></span></div>
+                <div><strong>DOB & Age:</strong> <span id="m-dob"></span> (<span id="m-age"></span> yrs)</div>
+                <div><strong>Nationality:</strong> <span id="m-nationality"></span></div>
+                <div><strong>District:</strong> <span id="m-district"></span></div>
+                <div><strong>Category:</strong> <span id="m-category"></span></div>
+                <div class="col-span-2"><strong>Shop Address:</strong> <span id="m-address"></span></div>
+                <div class="col-span-3"><strong>Permanent Address:</strong> <span id="m-perm"></span></div>
+            </div>
+
+            <!-- DOCUMENTS PREVIEW SECTION -->
+            <div class="space-y-3">
+                <h4 class="font-bold text-slate-800 text-sm uppercase">Uploaded Verification Documents</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="border rounded-xl p-3 text-center space-y-2 bg-slate-50">
+                        <p class="text-xs font-bold text-slate-600">NID / Passport</p>
+                        <div id="m-doc-nid-preview" class="h-32 flex items-center justify-center bg-white rounded border overflow-hidden"></div>
+                    </div>
+                    <div class="border rounded-xl p-3 text-center space-y-2 bg-slate-50">
+                        <p class="text-xs font-bold text-slate-600">Trade License</p>
+                        <div id="m-doc-trade-preview" class="h-32 flex items-center justify-center bg-white rounded border overflow-hidden"></div>
+                    </div>
+                    <div class="border rounded-xl p-3 text-center space-y-2 bg-slate-50">
+                        <p class="text-xs font-bold text-slate-600">Business Logo</p>
+                        <div id="m-doc-logo-preview" class="h-32 flex items-center justify-center bg-white rounded border overflow-hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- APPROVAL & REJECTION ACTIONS -->
+            <div id="modal-action-section" class="border-t pt-4 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div class="w-full sm:w-auto flex-grow space-y-1">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase">Assign Login Credentials Upon Approval</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="assign-username" class="border p-2 rounded-lg text-sm w-1/2" placeholder="Username">
+                        <input type="text" id="assign-password" class="border p-2 rounded-lg text-sm w-1/2" placeholder="Password">
+                    </div>
+                </div>
+                <div class="flex space-x-3 w-full sm:w-auto pt-4 sm:pt-0">
+                    <button onclick="AdminPortal.rejectCurrentApplication()" class="flex-1 sm:flex-none bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 transition">Reject ❌</button>
+                    <button onclick="AdminPortal.approveCurrentApplication()" class="flex-1 sm:flex-none bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-emerald-700 transition">Approve & Send ✓</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- ADMIN DASHBOARD -->
-    <div id="admin-dashboard-wrapper" class="hidden flex-grow p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
-        <div class="flex justify-between items-center border-b pb-4 bg-white p-6 rounded-2xl shadow-sm">
-            <div>
-                <span class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full uppercase">Administrator Dashboard</span>
-                <h1 class="text-2xl font-bold mt-1">User Verification & Management Center</h1>
-            </div>
-            <button onclick="AdminPanel.logout()" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-semibold">Logout</button>
-        </div>
-
-        <div class="flex space-x-2 border-b pb-2">
-            <button onclick="AdminPanel.switchTab('pending')" id="admin-btn-pending" class="px-4 py-2 rounded-lg font-bold text-sm bg-indigo-600 text-white">Pending Requests (<span id="count-pending">0</span>)</button>
-            <button onclick="AdminPanel.switchTab('approved')" id="admin-btn-approved" class="px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-600">Approved Users (<span id="count-approved">0</span>)</button>
-            <button onclick="AdminPanel.switchTab('rejected')" id="admin-btn-rejected" class="px-4 py-2 rounded-lg font-bold text-sm bg-white text-slate-600">Rejected List (<span id="count-rejected">0</span>)</button>
-        </div>
-
-        <!-- PENDING TAB -->
-        <div id="admin-tab-pending" class="admin-tab-content space-y-4">
-            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-100 uppercase text-xs"><tr><th class="p-4">Applicant / Shop</th><th class="p-4">Contact</th><th class="p-4">DOB & Age</th><th class="p-4 text-center">Action</th></tr></thead>
-                    <tbody id="table-pending-body" class="divide-y"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- APPROVED TAB -->
-        <div id="admin-tab-approved" class="admin-tab-content hidden space-y-4">
-            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-100 uppercase text-xs"><tr><th class="p-4">User & Shop</th><th class="p-4">Username</th><th class="p-4">Views</th><th class="p-4">Status / Delist Toggle</th></tr></thead>
-                    <tbody id="table-approved-body" class="divide-y"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- REJECTED TAB -->
-        <div id="admin-tab-rejected" class="admin-tab-content hidden space-y-4">
-            <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-100 uppercase text-xs"><tr><th class="p-4">Applicant</th><th class="p-4">Contact</th><th class="p-4 text-center">Permanently Remove</th></tr></thead>
-                    <tbody id="table-rejected-body" class="divide-y"></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- FULLSCREEN PROFILE MODAL -->
-    <div id="fullscreen-profile-modal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4 transition-all duration-300 opacity-0 scale-95">
-        <div class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="AdminPanel.closeFullscreenProfile()" class="absolute top-6 right-6 bg-slate-100 w-10 h-10 rounded-full font-bold">✕</button>
-            <div id="profile-modal-content" class="space-y-4"></div>
-        </div>
-    </div>
-
-    <script src="admin.js"></script>
+    <script src="admin-script.js"></script>
 </body>
 </html>
