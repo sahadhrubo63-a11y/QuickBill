@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business POS & Inventory Pro Suite</title>
+    <title>Business POS & Inventory Pro Suite (Cloud Ready)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Inter Font -->
@@ -12,6 +12,10 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <!-- html2pdf.js for PDF Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -23,14 +27,14 @@
         <!-- LOGIN CARD -->
         <div id="login-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 transition-all">
             <div class="text-center mb-8">
-                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">POS PRO v5.0</span>
+                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">POS PRO CLOUD</span>
                 <h2 class="text-3xl font-bold text-slate-900 mt-2">Sign In</h2>
-                <p class="text-sm text-slate-500 mt-1">Access your business dashboard</p>
+                <p class="text-sm text-slate-500 mt-1">Access your multi-device cloud dashboard</p>
             </div>
             <form onsubmit="event.preventDefault(); POSApp.handleLogin();" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username / Email</label>
-                    <input type="text" id="login-username" required class="w-full border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="Username or Email">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address</label>
+                    <input type="email" id="login-email" required class="w-full border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="name@company.com">
                 </div>
                 <div>
                     <div class="flex justify-between items-center mb-1">
@@ -52,50 +56,33 @@
         <!-- SIGNUP CARD -->
         <div id="signup-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 hidden transition-all">
             <div class="text-center mb-6">
-                <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Registration</span>
+                <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Cloud Registration</span>
                 <h2 class="text-3xl font-bold text-slate-900 mt-2">Sign Up</h2>
-                <p class="text-sm text-slate-500 mt-1">Register your business profile to get started</p>
+                <p class="text-sm text-slate-500 mt-1">Register for global cloud access</p>
             </div>
             
-            <form id="signup-form-step1" onsubmit="event.preventDefault(); POSApp.initiateSignupOTP();" class="space-y-3">
+            <form onsubmit="event.preventDefault(); POSApp.handleSignup();" class="space-y-3">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Company / Business Name</label>
                     <input type="text" id="reg-company" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="e.g., Global Traders">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address (For OTP Verification)</label>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Email Address</label>
                     <input type="email" id="reg-email" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="name@company.com">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Business Category</label>
-                    <input type="text" id="reg-category" class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="e.g., Grocery / Electronics / Retail">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username</label>
-                    <input type="text" id="reg-username" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="Username">
+                    <input type="text" id="reg-category" class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="e.g., Retail / Grocery">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
                     <div class="relative">
-                        <input type="password" id="reg-password" required oninput="POSApp.checkPasswordStrength('reg-password', 'reg-strength-indicator')" class="w-full border border-slate-200 px-3 py-2 pr-10 rounded-lg text-sm" placeholder="••••••••">
+                        <input type="password" id="reg-password" required class="w-full border border-slate-200 px-3 py-2 pr-10 rounded-lg text-sm" placeholder="••••••••">
                         <button type="button" onclick="POSApp.togglePasswordVisibility('reg-password')" class="absolute right-3 top-2 text-slate-400">👁️</button>
                     </div>
-                    <div id="reg-strength-indicator" class="text-[10px] mt-1 space-y-0.5"></div>
                 </div>
-                <button type="submit" class="w-full bg-emerald-600 text-white p-2.5 rounded-lg font-semibold hover:bg-emerald-700 transition text-sm">Send Email Verification OTP</button>
+                <button type="submit" class="w-full bg-emerald-600 text-white p-2.5 rounded-lg font-semibold hover:bg-emerald-700 transition text-sm">Create Cloud Account</button>
             </form>
-
-            <form id="signup-form-step2" onsubmit="event.preventDefault(); POSApp.verifySignupOTP();" class="space-y-4 hidden">
-                <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-lg text-center">
-                    <p class="text-xs text-indigo-800">We sent a 6-digit verification code to <br><strong id="otp-sent-email-display" class="font-semibold"></strong></p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1 text-center">Enter 6-Digit OTP Code</label>
-                    <input type="text" id="reg-otp-input" maxlength="6" required class="w-full border border-slate-200 p-3 rounded-lg text-center font-mono text-xl tracking-widest font-bold" placeholder="000000">
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm">Verify OTP & Complete Account</button>
-            </form>
-
             <div class="text-center mt-4">
                 <p class="text-xs text-slate-600">Already have an account? <button onclick="POSApp.showAuthScreen('login-card')" class="text-indigo-600 font-semibold hover:underline">Login here</button></p>
             </div>
@@ -104,29 +91,15 @@
         <!-- FORGOT PASSWORD CARD -->
         <div id="forgot-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 hidden transition-all">
             <div class="text-center mb-6">
-                <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Account Recovery</span>
+                <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Recovery</span>
                 <h2 class="text-3xl font-bold text-slate-900 mt-2">Reset Password</h2>
             </div>
-            <form id="forgot-form-step1" onsubmit="event.preventDefault(); POSApp.sendForgotOTP();" class="space-y-4">
+            <form onsubmit="event.preventDefault(); POSApp.handleForgotPassword();" class="space-y-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Registered Email Address</label>
                     <input type="email" id="forgot-email" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="name@company.com">
                 </div>
-                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm">Send Reset OTP</button>
-            </form>
-            <form id="forgot-form-step2" onsubmit="event.preventDefault(); POSApp.resetPassword();" class="space-y-3 hidden">
-                <div class="bg-amber-50 border border-amber-100 p-3 rounded-lg text-center">
-                    <p class="text-xs text-amber-800">OTP code sent to <strong id="forgot-email-display"></strong></p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Enter 6-Digit OTP</label>
-                    <input type="text" id="forgot-otp-input" maxlength="6" required class="w-full border border-slate-200 p-2.5 rounded-lg text-center font-mono text-lg tracking-widest font-bold" placeholder="000000">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">New Strong Password</label>
-                    <input type="password" id="forgot-new-password" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="••••••••">
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm">Update Password</button>
+                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm">Send Reset Email</button>
             </form>
             <div class="text-center mt-4">
                 <button onclick="POSApp.showAuthScreen('login-card')" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Login</button>
@@ -143,7 +116,7 @@
                 <div id="sidebar-initial-logo" class="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-lg">P</div>
                 <div class="truncate">
                     <h2 class="font-bold text-white leading-tight truncate w-36" id="app-company-name">Company Name</h2>
-                    <span class="text-xs text-slate-400" id="app-username">User: Admin</span>
+                    <span class="text-xs text-slate-400" id="app-username">Cloud User</span>
                 </div>
             </div>
 
@@ -199,7 +172,7 @@
                               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
-                            <span>Auto Barcode Scanner Active</span>
+                            <span>Cloud Sync Active</span>
                         </div>
                     </div>
 
