@@ -47,7 +47,7 @@ body {
         box-shadow: none !important;
     }
     
-    /* POS Bill Print View (if active) */
+    /* POS Bill Print View */
     #print-area, #print-area * {
         visibility: visible;
     }
