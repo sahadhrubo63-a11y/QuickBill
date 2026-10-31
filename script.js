@@ -1,35 +1,10 @@
 /**
- * Enterprise POS Engine Namespace with Firebase Cloud Database Sync
+ * Enterprise POS Engine Namespace with Dedicated Admin Panel & Portal Registration
  */
-const firebaseConfig = {
-    apiKey: "AIzaSyDNookDÚc3J7oMJFxhLvv4_Vv9ia_pu7MY",
-    authDomain: "advancedmanager.firebaseapp.com",
-    projectId: "advancedmanager",
-    storageBucket: "advancedmanager.appspot.com",
-    messagingSenderId: "1075305184916",
-    appId: "1:1075305184916:web:743a999b9087369185ha81"
-};
-
-// Initialize Firebase Compat
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const auth = firebase.auth();
-const db = firebase.firestore();
-
 const POSApp = (function() {
-    let currentUser = null;
-    let userData = {
-        company: "My Business",
-        category: "Retail",
-        inventory: [],
-        statements: [],
-        vouchers: [],
-        documents: [],
-        address: "",
-        helpline: "",
-        dp: ""
-    };
+    let activeUser = null;
+    let dbUsers = JSON.parse(localStorage.getItem('pos_users')) || {};
+    let pendingApplications = JSON.parse(localStorage.getItem('pos_pending_apps')) || [];
     let cart = [];
     let tempProfileDpBase64 = "";
 
@@ -46,28 +21,9 @@ const POSApp = (function() {
             .replace(/'/g, '&#039;');
     }
 
-    async function saveUserDataToCloud() {
-        if (!currentUser) return;
-        try {
-            await db.collection("users").doc(currentUser.uid).set(userData, { merge: true });
-        } catch (e) {
-            console.error("Cloud sync error: ", e);
-        }
-    }
-
-    async function fetchUserDataFromCloud(uid) {
-        try {
-            const docRef = await db.collection("users").doc(uid).get();
-            if (docRef.exists) {
-                userData = docRef.data();
-                if (!userData.inventory) userData.inventory = [];
-                if (!userData.statements) userData.statements = [];
-                if (!userData.vouchers) userData.vouchers = [];
-                if (!userData.documents) userData.documents = [];
-            }
-        } catch (e) {
-            console.error("Error fetching cloud data: ", e);
-        }
+    function saveToLocalStorage() {
+        localStorage.setItem('pos_users', JSON.stringify(dbUsers));
+        localStorage.setItem('pos_pending_apps', JSON.stringify(pendingApplications));
     }
 
     function playBeepSound() {
@@ -89,31 +45,21 @@ const POSApp = (function() {
                 oscillator.stop(audioCtx.currentTime + 0.08);
             }
         } catch(e) {
-            console.log('Audio Context suppressed.');
+            console.log('Audio Context suppressed or not allowed.');
         }
     }
 
     return {
         init: function() {
-            auth.onAuthStateChanged(async (user) => {
-                if (user) {
-                    currentUser = user;
-                    await fetchUserDataFromCloud(user.uid);
-                    this.loadApplication();
-                } else {
-                    currentUser = null;
-                    document.getElementById('app-container').classList.add('hidden');
-                    document.getElementById('auth-container').classList.remove('hidden');
-                    this.showAuthScreen('login-card');
-                }
-            });
+            this.checkAutoLogin();
             this.initBarcodeScannerListener();
         },
 
         showAuthScreen: function(screenId) {
             document.getElementById('login-card').classList.add('hidden');
             document.getElementById('signup-card').classList.add('hidden');
-            document.getElementById('forgot-card').classList.add('hidden');
+            document.getElementById('admin-login-card').classList.add('hidden');
+            document.getElementById('admin-panel-container').classList.add('hidden');
             document.getElementById(screenId).classList.remove('hidden');
         },
 
@@ -122,72 +68,234 @@ const POSApp = (function() {
             input.type = input.type === "password" ? "text" : "password";
         },
 
-        handleSignup: async function() {
-            const company = document.getElementById('reg-company').value.trim();
-            const email = document.getElementById('reg-email').value.trim().toLowerCase();
-            const category = document.getElementById('reg-category').value.trim();
-            const password = document.getElementById('reg-password').value;
+        calculateAgeFromDOB: function() {
+            const dobVal = document.getElementById('portal-dob').value;
+            if (!dobVal) return;
+            const dob = new Date(dobVal);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+            document.getElementById('portal-age').value = age >= 0 ? `${age} Years` : 'Invalid DOB';
+        },
 
-            if (!company || !email || !password) {
-                alert('All required fields must be completed!');
+        submitRegistrationPortal: async function() {
+            const name = document.getElementById('portal-name').value.trim();
+            const username = document.getElementById('portal-username').value.trim();
+            const company = document.getElementById('portal-company').value.trim();
+            const category = document.getElementById('portal-category').value.trim();
+            const phone = document.getElementById('portal-phone').value.trim();
+            const email = document.getElementById('portal-email').value.trim().toLowerCase();
+            const dob = document.getElementById('portal-dob').value;
+            const age = document.getElementById('portal-age').value;
+            const address = document.getElementById('portal-address').value.trim();
+            const homeAddress = document.getElementById('portal-home-address').value.trim();
+            const permAddress = document.getElementById('portal-perm-address').value.trim();
+            const district = document.getElementById('portal-district').value.trim();
+            const nationality = document.getElementById('portal-nationality').value.trim();
+
+            if (dbUsers[username]) {
+                alert('This username is already registered in the software!');
                 return;
             }
 
-            try {
-                const res = await auth.createUserWithEmailAndPassword(email, password);
-                currentUser = res.user;
-                userData = {
-                    company,
-                    category,
-                    email,
-                    inventory: [],
-                    statements: [],
-                    vouchers: [],
-                    documents: [],
-                    address: "",
-                    helpline: "",
-                    dp: ""
-                };
-                await saveUserDataToCloud();
-                alert('Cloud account created successfully!');
-            } catch (error) {
-                alert('Signup failed: ' + error.message);
+            // Helper to convert file to base64
+            const fileToBase64 = (fileInputId) => {
+                return new Promise((resolve) => {
+                    const fileInput = document.getElementById(fileInputId);
+                    if (fileInput && fileInput.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.readAsDataURL(fileInput.files[0]);
+                    } else {
+                        resolve('');
+                    }
+                });
+            };
+
+            const nidBase64 = await fileToBase64('portal-file-nid');
+            const picBase64 = await fileToBase64('portal-file-pic');
+            const tradeBase64 = await fileToBase64('portal-file-trade');
+            const logoBase64 = await fileToBase64('portal-file-logo');
+
+            const applicationRecord = {
+                id: 'APP-' + Math.floor(1000 + Math.random() * 9000),
+                name, username, company, category, phone, email, dob, age,
+                address, homeAddress, permAddress, district, nationality,
+                nidFile: nidBase64, picFile: picBase64, tradeFile: tradeBase64, logoFile: logoBase64,
+                status: 'Pending',
+                submittedAt: new Date().toLocaleString()
+            };
+
+            pendingApplications.push(applicationRecord);
+            saveToLocalStorage();
+
+            alert('Registration details successfully submitted to Admin Panel! Once verified, your username and temporary password will be sent to your email and phone number.');
+            location.reload();
+        },
+
+        handleAdminLogin: function() {
+            const user = document.getElementById('admin-user-input').value.trim();
+            const pass = document.getElementById('admin-pass-input').value.trim();
+
+            if (user === 'admin' && pass === 'admin123') {
+                document.getElementById('auth-container').classList.add('hidden');
+                document.getElementById('admin-panel-container').classList.remove('hidden');
+                this.renderAdminApplications();
+            } else {
+                alert('Invalid Admin Credentials! (Use admin / admin123)');
             }
         },
 
-        handleLogin: async function() {
-            const email = document.getElementById('login-email').value.trim().toLowerCase();
+        handleAdminLogout: function() {
+            document.getElementById('admin-panel-container').classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
+            this.showAuthScreen('login-card');
+        },
+
+        renderAdminApplications: function() {
+            const tbody = document.getElementById('admin-applications-tbody');
+            tbody.innerHTML = '';
+
+            pendingApplications.forEach((app, index) => {
+                tbody.innerHTML += `
+                    <tr class="text-sm">
+                        <td class="p-3">
+                            <strong>${escapeHTML(app.company)}</strong><br>
+                            <span class="text-xs text-slate-500">Owner: ${escapeHTML(app.name)}</span><br>
+                            <span class="text-xs text-indigo-600 font-mono">Req User: ${escapeHTML(app.username)}</span>
+                        </td>
+                        <td class="p-3 text-xs">
+                            📞 ${escapeHTML(app.phone)}<br>
+                            ✉️ ${escapeHTML(app.email)}
+                        </td>
+                        <td class="p-3 text-xs">
+                            DOB: ${escapeHTML(app.dob)}<br>
+                            <strong class="text-indigo-600">${escapeHTML(app.age)}</strong>
+                        </td>
+                        <td class="p-3 text-xs">
+                            <strong>Current:</strong> ${escapeHTML(app.address)}<br>
+                            <strong>Perm:</strong> ${escapeHTML(app.permAddress)}, ${escapeHTML(app.district)}
+                        </td>
+                        <td class="p-3 text-xs space-y-1">
+                            <button onclick="POSApp.viewAppFile('${app.id}', 'pic')" class="text-indigo-600 hover:underline block font-semibold">🖼️ View Picture</button>
+                            <button onclick="POSApp.viewAppFile('${app.id}', 'nid')" class="text-indigo-600 hover:underline block font-semibold">📄 View NID/Passport</button>
+                            <button onclick="POSApp.viewAppFile('${app.id}', 'trade')" class="text-indigo-600 hover:underline block font-semibold">📑 View Trade License</button>
+                            <button onclick="POSApp.viewAppFile('${app.id}', 'logo')" class="text-indigo-600 hover:underline block font-semibold">🏷️ View Logo</button>
+                        </td>
+                        <td class="p-3 text-xs">
+                            ${app.status === 'Approved' ? '<span class="text-emerald-600 font-bold">✓ Approved</span>' : `
+                                <div class="space-y-2">
+                                    <input type="text" id="pass-assign-${index}" placeholder="Assign Password" class="border p-1.5 rounded text-xs w-36"><br>
+                                    <button onclick="POSApp.approveApplication(${index})" class="bg-emerald-600 text-white px-3 py-1 rounded font-bold hover:bg-emerald-700">Approve & Send</button>
+                                    <button onclick="POSApp.rejectApplication(${index})" class="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 ml-1">Reject</button>
+                                </div>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (pendingApplications.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">No applications submitted yet.</td></tr>`;
+            }
+        },
+
+        viewAppFile: function(appId, fileType) {
+            const app = pendingApplications.find(a => a.id === appId);
+            if (!app) return;
+            let fileData = fileType === 'pic' ? app.picFile : (fileType === 'nid' ? app.nidFile : (fileType === 'trade' ? app.tradeFile : app.logoFile));
+            if (!fileData) { alert('File not available.'); return; }
+
+            const w = window.open('');
+            w.document.write(`<iframe src="${fileData}" style="width:100%; height:100%; border:none;"></iframe>`);
+        },
+
+        approveApplication: function(index) {
+            const app = pendingApplications[index];
+            const assignedPass = document.getElementById(`pass-assign-${index}`).value.trim();
+
+            if (!assignedPass) {
+                alert('Please assign a password for the user!');
+                return;
+            }
+
+            // Create account in software database linked with admin panel
+            dbUsers[app.username] = {
+                username: app.username,
+                email: app.email,
+                password: assignedPass,
+                company: app.company,
+                category: app.category,
+                address: app.address,
+                helpline: app.phone,
+                dp: app.logoFile || app.picFile,
+                inventory: [],
+                statements: [],
+                vouchers: [],
+                documents: [
+                    { title: 'NID / Passport', fileData: app.nidFile, fileType: 'image/jpeg', fileName: 'nid.jpg' },
+                    { title: 'Trade License', fileData: app.tradeFile, fileType: 'image/jpeg', fileName: 'trade.jpg' }
+                ]
+            };
+
+            app.status = 'Approved';
+            saveToLocalStorage();
+
+            alert(`[SIMULATED NOTIFICATION SENT]\n\nUsername: ${app.username}\nPassword: ${assignedPass}\n\nSuccessfully sent to Email: ${app.email} & Phone: ${app.phone}`);
+            this.renderAdminApplications();
+        },
+
+        rejectApplication: function(index) {
+            if (confirm('Are you sure you want to reject this application?')) {
+                pendingApplications.splice(index, 1);
+                saveToLocalStorage();
+                this.renderAdminApplications();
+            }
+        },
+
+        handleLogin: function() {
+            const username = document.getElementById('login-username').value.trim();
             const pass = document.getElementById('login-password').value;
 
-            try {
-                await auth.signInWithEmailAndPassword(email, pass);
-            } catch (error) {
-                alert('Login failed: ' + error.message);
+            if (dbUsers[username] && dbUsers[username].password === pass) {
+                activeUser = username;
+                localStorage.setItem('pos_active_user', activeUser);
+                this.loadApplication();
+            } else {
+                alert('Invalid username or password! Please verify credentials sent by admin.');
             }
         },
 
-        handleForgotPassword: async function() {
-            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
-            if (!email) { alert('Enter email address!'); return; }
-            try {
-                await auth.sendPasswordResetEmail(email);
-                alert('Password reset email sent! Check your inbox.');
-                this.showAuthScreen('login-card');
-            } catch (error) {
-                alert('Error: ' + error.message);
+        checkAutoLogin: function() {
+            const savedUser = localStorage.getItem('pos_active_user');
+            if (savedUser && dbUsers[savedUser]) { 
+                activeUser = savedUser; 
+                this.loadApplication(); 
             }
         },
 
-        handleLogout: async function() {
-            await auth.signOut();
+        handleLogout: function() {
+            activeUser = null;
+            localStorage.removeItem('pos_active_user');
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('auth-container').classList.remove('hidden');
+            this.showAuthScreen('login-card');
         },
 
         loadApplication: function() {
             document.getElementById('auth-container').classList.add('hidden');
+            document.getElementById('admin-panel-container').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
+            const userData = dbUsers[activeUser];
 
-            document.getElementById('app-company-name').innerText = userData.company || "My Business";
-            document.getElementById('app-username').innerText = currentUser.email;
+            if (!userData.documents) userData.documents = [];
+            if (!userData.vouchers) userData.vouchers = [];
+
+            document.getElementById('app-company-name').innerText = userData.company;
+            document.getElementById('app-username').innerText = `User: ${userData.username}`;
             
             if(userData.dp) {
                 document.getElementById('sidebar-dp').src = userData.dp;
@@ -199,7 +307,7 @@ const POSApp = (function() {
             } else {
                 document.getElementById('sidebar-dp').classList.add('hidden');
                 document.getElementById('sidebar-initial-logo').classList.remove('hidden');
-                document.getElementById('sidebar-initial-logo').innerText = (userData.company || "P").substring(0, 1).toUpperCase();
+                document.getElementById('sidebar-initial-logo').innerText = userData.company.substring(0, 1).toUpperCase();
             }
             document.getElementById('prof-address').value = userData.address || "";
             document.getElementById('prof-helpline').value = userData.helpline || "";
@@ -230,19 +338,19 @@ const POSApp = (function() {
             }
         },
 
-        saveProfileConfiguration: async function() {
-            userData.address = document.getElementById('prof-address').value.trim();
-            userData.helpline = document.getElementById('prof-helpline').value.trim();
+        saveProfileConfiguration: function() {
+            dbUsers[activeUser].address = document.getElementById('prof-address').value.trim();
+            dbUsers[activeUser].helpline = document.getElementById('prof-helpline').value.trim();
             if (tempProfileDpBase64) {
-                userData.dp = tempProfileDpBase64;
+                dbUsers[activeUser].dp = tempProfileDpBase64;
             }
-            await saveUserDataToCloud();
-            alert('Profile Settings successfully updated & synced to cloud!');
+            saveToLocalStorage();
+            alert('Profile Settings successfully updated!');
             this.loadApplication();
         },
 
         /* BUSINESS DOCUMENTS MANAGEMENT */
-        uploadBusinessDocument: async function() {
+        uploadBusinessDocument: function() {
             const titleInput = document.getElementById('doc-title');
             const fileInput = document.getElementById('doc-file-input');
             const title = titleInput.value.trim();
@@ -254,27 +362,29 @@ const POSApp = (function() {
             }
 
             const reader = new FileReader();
-            reader.onload = async (e) => {
+            reader.onload = (e) => {
                 const base64Data = e.target.result;
-                if (!userData.documents) userData.documents = [];
-                userData.documents.push({
+                if (!dbUsers[activeUser].documents) {
+                    dbUsers[activeUser].documents = [];
+                }
+                dbUsers[activeUser].documents.push({
                     title: title,
                     fileData: base64Data,
                     fileType: file.type,
                     fileName: file.name
                 });
-                await saveUserDataToCloud();
+                saveToLocalStorage();
                 this.renderBusinessDocuments();
                 
                 titleInput.value = '';
                 fileInput.value = '';
-                alert('Document successfully uploaded & synced!');
+                alert('Document successfully uploaded!');
             };
             reader.readAsDataURL(file);
         },
 
         renderBusinessDocuments: function() {
-            const docs = userData.documents || [];
+            const docs = dbUsers[activeUser].documents || [];
             const tbody = document.getElementById('business-docs-table-body');
             tbody.innerHTML = '';
 
@@ -297,7 +407,7 @@ const POSApp = (function() {
         },
 
         viewDocument: function(index) {
-            const doc = userData.documents[index];
+            const doc = dbUsers[activeUser].documents[index];
             if (!doc) return;
 
             document.getElementById('modal-doc-title').innerText = doc.title;
@@ -317,7 +427,7 @@ const POSApp = (function() {
         },
 
         downloadDocument: function(index) {
-            const doc = userData.documents[index];
+            const doc = dbUsers[activeUser].documents[index];
             if (!doc) return;
 
             const a = document.createElement('a');
@@ -328,10 +438,10 @@ const POSApp = (function() {
             document.body.removeChild(a);
         },
 
-        deleteDocument: async function(index) {
+        deleteDocument: function(index) {
             if (confirm('Are you sure you want to delete this document?')) {
-                userData.documents.splice(index, 1);
-                await saveUserDataToCloud();
+                dbUsers[activeUser].documents.splice(index, 1);
+                saveToLocalStorage();
                 this.renderBusinessDocuments();
             }
         },
@@ -349,7 +459,7 @@ const POSApp = (function() {
         renderVoucherFormFields: function() {
             const type = document.getElementById('v-type-select').value;
             const container = document.getElementById('voucher-dynamic-fields');
-            const defaultBusName = userData.company || '';
+            const defaultBusName = dbUsers[activeUser].company || '';
             const uniqueNum = type === 'Challan' ? 'CH-' + Math.floor(1000 + Math.random() * 9000) : (type === 'Credit Voucher' ? 'CR-' + Math.floor(1000 + Math.random() * 9000) : 'DR-' + Math.floor(1000 + Math.random() * 9000));
             const todayStr = new Date().toISOString().split('T')[0];
 
@@ -366,7 +476,7 @@ const POSApp = (function() {
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount (৳)</label><input type="number" step="any" id="cv-amount" class="w-full border p-2 rounded text-sm" placeholder="0.00"></div>
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount in Words</label><input type="text" id="cv-words" class="w-full border p-2 rounded text-sm" placeholder="Taka in words"></div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="cv-prep" class="w-full border p-2 rounded text-sm" value="${currentUser.email}"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="cv-prep" class="w-full border p-2 rounded text-sm" value="${dbUsers[activeUser].username}"></div>
                         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Authorized By</label><input type="text" id="cv-auth" class="w-full border p-2 rounded text-sm" placeholder="Manager Name"></div>
                     </div>
                 `;
@@ -384,7 +494,7 @@ const POSApp = (function() {
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount (৳)</label><input type="number" step="any" id="dv-amount" class="w-full border p-2 rounded text-sm" placeholder="0.00"></div>
                     <div><label class="block text-xs font-semibold text-slate-600 mb-1">Amount in Words</label><input type="text" id="dv-words" class="w-full border p-2 rounded text-sm" placeholder="Taka in words"></div>
                     <div class="grid grid-cols-2 gap-2">
-                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="dv-prep" class="w-full border p-2 rounded text-sm" value="${currentUser.email}"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Prepared By</label><input type="text" id="dv-prep" class="w-full border p-2 rounded text-sm" value="${dbUsers[activeUser].username}"></div>
                         <div><label class="block text-xs font-semibold text-slate-600 mb-1">Authorized By</label><input type="text" id="dv-auth" class="w-full border p-2 rounded text-sm" placeholder="Manager Name"></div>
                     </div>
                 `;
@@ -425,7 +535,7 @@ const POSApp = (function() {
             }
         },
 
-        saveAndGenerateVoucher: async function() {
+        saveAndGenerateVoucher: function() {
             const type = document.getElementById('v-type-select').value;
             let record = { type };
 
@@ -478,16 +588,15 @@ const POSApp = (function() {
                 record.auth = document.getElementById('ch-auth').value;
             }
 
-            if (!userData.vouchers) userData.vouchers = [];
-            userData.vouchers.push(record);
-            await saveUserDataToCloud();
+            dbUsers[activeUser].vouchers.push(record);
+            saveToLocalStorage();
             this.closeVoucherModal();
             this.renderVouchersTable();
             this.previewVoucherObject(record);
         },
 
         renderVouchersTable: function(filteredList = null) {
-            const vouchers = filteredList || userData.vouchers || [];
+            const vouchers = filteredList || dbUsers[activeUser].vouchers || [];
             const tbody = document.getElementById('vouchers-table-body');
             tbody.innerHTML = '';
 
@@ -520,7 +629,7 @@ const POSApp = (function() {
             const filterType = document.getElementById('voucher-filter-type').value;
             const searchDate = document.getElementById('voucher-search-date').value;
 
-            const allVouchers = userData.vouchers || [];
+            const allVouchers = dbUsers[activeUser].vouchers || [];
             const filtered = allVouchers.filter(v => {
                 const matchNum = searchNum === '' || v.uniqueNum.toLowerCase().includes(searchNum);
                 const matchType = filterType === 'All' || v.type === filterType;
@@ -532,7 +641,7 @@ const POSApp = (function() {
         },
 
         previewVoucherByIndex: function(index) {
-            const v = userData.vouchers[index];
+            const v = dbUsers[activeUser].vouchers[index];
             if (v) this.previewVoucherObject(v);
         },
 
@@ -543,8 +652,10 @@ const POSApp = (function() {
             document.getElementById('pv-date').innerText = v.date;
 
             const logoElement = document.getElementById('pv-shop-logo');
-            if (userData && userData.dp && userData.dp.trim() !== "") {
-                logoElement.src = userData.dp;
+            const currentUserData = dbUsers[activeUser];
+            
+            if (currentUserData && currentUserData.dp && currentUserData.dp.trim() !== "") {
+                logoElement.src = currentUserData.dp;
                 logoElement.classList.remove('hidden');
             } else {
                 logoElement.src = "";
@@ -616,17 +727,18 @@ const POSApp = (function() {
                 html2canvas:  { scale: 2, useCORS: true, allowTaint: true },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
+            
             if (typeof html2pdf !== 'undefined') {
                 html2pdf().set(opt).from(element).save();
             } else {
-                alert('PDF library loading...');
+                alert('PDF Generator library is loading. Please try again in 2 seconds.');
             }
         },
 
-        deleteVoucher: async function(index) {
+        deleteVoucher: function(index) {
             if (confirm('Are you sure you want to delete this record?')) {
-                userData.vouchers.splice(index, 1);
-                await saveUserDataToCloud();
+                dbUsers[activeUser].vouchers.splice(index, 1);
+                saveToLocalStorage();
                 this.renderVouchersTable();
             }
         },
@@ -636,7 +748,7 @@ const POSApp = (function() {
             const select = document.getElementById('bill-product-select');
             const badge = document.getElementById('pos-unit-badge');
             if (select.value === "") { badge.innerText = "Unit"; return; }
-            badge.innerText = userData.inventory[select.value].unit;
+            badge.innerText = dbUsers[activeUser].inventory[select.value].unit;
             this.calculateLivePOSBreakdown();
         },
 
@@ -645,7 +757,7 @@ const POSApp = (function() {
             const qty = parseFloat(document.getElementById('bill-qty-input').value) || 0;
             const panel = document.getElementById('live-calculation-panel');
             if (select.value === "" || qty <= 0) { panel.classList.add('hidden'); return; }
-            const item = userData.inventory[select.value];
+            const item = dbUsers[activeUser].inventory[select.value];
             panel.classList.remove('hidden');
             document.getElementById('live-unit-price').innerText = `${item.sell.toFixed(2)} TK`;
             document.getElementById('live-subtotal').innerText = `${(item.sell * qty).toFixed(2)} TK`;
@@ -677,7 +789,7 @@ const POSApp = (function() {
         },
 
         executeAddToCartProcessing: function(invIndex, quantitativeVolume) {
-            const item = userData.inventory[invIndex];
+            const item = dbUsers[activeUser].inventory[invIndex];
             if (!item) return;
 
             if (quantitativeVolume > item.qty) { 
@@ -709,7 +821,9 @@ const POSApp = (function() {
         initBarcodeScannerListener: function() {
             const self = this;
             window.addEventListener('keydown', function(e) {
-                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    if (document.activeElement.id === 'reg-otp-input' || document.activeElement.id === 'forgot-otp-input') return;
+                }
 
                 const currentTime = Date.now();
                 if (currentTime - lastKeyTime > 50) barcodeBuffer = '';
@@ -728,8 +842,8 @@ const POSApp = (function() {
         },
 
         processHardwareScannerStroke: function(scannedSkuCode) {
-            if (!currentUser) return;
-            const inventory = userData.inventory || [];
+            if (!activeUser || !dbUsers[activeUser]) return;
+            const inventory = dbUsers[activeUser].inventory || [];
             const index = inventory.findIndex(item => item.barcode === scannedSkuCode);
 
             if (index === -1) {
@@ -784,7 +898,7 @@ const POSApp = (function() {
         },
 
         renderInventory: function() {
-            const items = userData.inventory || [];
+            const items = dbUsers[activeUser].inventory || [];
             const tbody = document.getElementById('inventory-table-body');
             tbody.innerHTML = '';
             
@@ -834,8 +948,8 @@ const POSApp = (function() {
         },
 
         checkLowStockAlerts: function() {
-            if (!currentUser) return;
-            const items = userData.inventory || [];
+            if (!activeUser || !dbUsers[activeUser]) return;
+            const items = dbUsers[activeUser].inventory || [];
             const lowStockItems = items.filter(item => item.qty <= (item.minStock || 5));
             const banner = document.getElementById('low-stock-alert-banner');
             const msgElement = document.getElementById('low-stock-alert-message');
@@ -851,15 +965,15 @@ const POSApp = (function() {
             }
         },
 
-        deleteInventoryItem: async function(index) {
+        deleteInventoryItem: function(index) {
             if (confirm('Are you sure you want to delete this product?')) {
-                userData.inventory.splice(index, 1);
-                await saveUserDataToCloud();
+                dbUsers[activeUser].inventory.splice(index, 1);
+                saveToLocalStorage();
                 this.renderInventory();
             }
         },
 
-        handleSaveProduct: async function() {
+        handleSaveProduct: function() {
             const name = document.getElementById('inv-name').value.trim();
             const skuInput = document.getElementById('inv-sku').value.trim();
             const qty = parseFloat(document.getElementById('inv-qty').value);
@@ -877,9 +991,8 @@ const POSApp = (function() {
             }
             const barcode = skuInput ? skuInput : "SKU" + Math.floor(10000 + Math.random() * 90000);
 
-            if (!userData.inventory) userData.inventory = [];
-            userData.inventory.push({ name, qty, unit, buy, sell, discount, vat, gift, barcode, minStock });
-            await saveUserDataToCloud();
+            dbUsers[activeUser].inventory.push({ name, qty, unit, buy, sell, discount, vat, gift, barcode, minStock });
+            saveToLocalStorage();
             this.renderInventory();
             
             document.getElementById('inv-name').value = ''; 
@@ -923,7 +1036,7 @@ const POSApp = (function() {
             img.src = URL.createObjectURL(svgBlob);
         },
 
-        processFinalInvoice: async function() {
+        processFinalInvoice: function() {
             if (cart.length === 0) { alert('Cart is currently empty!'); return; }
             const payMethod = document.getElementById('bill-pay-method').value;
             const receiveStatus = document.getElementById('bill-receive-status').value;
@@ -934,8 +1047,8 @@ const POSApp = (function() {
             const dueAmount = Math.max(0, totalBill - paidAmount);
 
             cart.forEach(item => { 
-                if(userData.inventory[item.inventoryIndex]) {
-                    userData.inventory[item.inventoryIndex].qty -= item.qty; 
+                if(dbUsers[activeUser].inventory[item.inventoryIndex]) {
+                    dbUsers[activeUser].inventory[item.inventoryIndex].qty -= item.qty; 
                 }
             });
 
@@ -943,14 +1056,14 @@ const POSApp = (function() {
                 date: new Date().toLocaleString().split(',')[0], total: totalBill, paid: paidAmount, due: dueAmount,
                 method: receiveStatus === 'Unpaid' ? 'Unpaid Ledger' : payMethod
             };
-            if (!userData.statements) userData.statements = [];
-            userData.statements.push(newStatement);
-            await saveUserDataToCloud();
+            dbUsers[activeUser].statements.push(newStatement);
+            saveToLocalStorage();
 
-            document.getElementById('bill-shop-name').innerText = userData.company;
-            document.getElementById('bill-shop-cat').innerText = userData.category || "Retail Counter";
-            document.getElementById('bill-shop-address').innerText = userData.address || "";
-            document.getElementById('bill-shop-helpline').innerText = userData.helpline ? `Helpline: ${userData.helpline}` : "";
+            const shopProfile = dbUsers[activeUser];
+            document.getElementById('bill-shop-name').innerText = shopProfile.company;
+            document.getElementById('bill-shop-cat').innerText = shopProfile.category || "Retail Counter";
+            document.getElementById('bill-shop-address').innerText = shopProfile.address || "";
+            document.getElementById('bill-shop-helpline').innerText = shopProfile.helpline ? `Helpline: ${shopProfile.helpline}` : "";
             document.getElementById('bill-date').innerText = newStatement.date;
             document.getElementById('bill-payment-type').innerText = newStatement.method;
 
@@ -993,7 +1106,7 @@ const POSApp = (function() {
         },
 
         renderStatements: function() {
-            const statements = userData.statements || [];
+            const statements = dbUsers[activeUser].statements || [];
             const tbody = document.getElementById('statement-table-body');
             tbody.innerHTML = '';
             let s=0, r=0, d=0;
@@ -1015,7 +1128,7 @@ const POSApp = (function() {
 
         handleDownloadCSV: function() {
             let csv = 'Timestamp,Gross Total,Paid Amount,Due,Method\n';
-            (userData.statements || []).forEach(st => { 
+            (dbUsers[activeUser].statements || []).forEach(st => { 
                 csv += `"${st.date}",${st.total},${st.paid},${st.due},"${st.method}"\n`; 
             });
             const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;' });
