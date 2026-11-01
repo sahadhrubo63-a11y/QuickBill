@@ -379,7 +379,64 @@
                         <button onclick="POSApp.openVoucherModal()" class="bg-indigo-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition flex items-center space-x-2 interactive-hover">
                             <span>➕</span> <span>Create New Voucher / Challan</span>
                         </button>
+                           if(currentType === "credit") {
+
+        title = "CREDIT VOUCHER";
+        number = getValue(currentType,"voucherNumber");
+        date = getValue(currentType,"date");
+
+        details =
+        row("Received From",getValue(currentType,"receivedFrom")) +
+        row("Account Name",getValue(currentType,"accountName")) +
+        row("Payment Method",getValue(currentType,"paymentMethod")) +
+        row("Transaction Reference",getValue(currentType,"reference")) +
+        row("Description / Narration",getValue(currentType,"description")) +
+        row("Prepared By",getValue(currentType,"preparedBy")) +
+        row("Authorized By",getValue(currentType,"authorizedBy")) +
+        row("Signature",getValue(currentType,"signature"));
+
+    } 
+                        else if(currentType === "debit") {
+
+        title = "DEBIT VOUCHER";
+        number = getValue(currentType,"voucherNumber");
+        date = getValue(currentType,"date");
+
+        details =
+        row("Paid To",getValue(currentType,"paidTo")) +
+        row("Account Name",getValue(currentType,"accountName")) +
+        row("Expense Category",getValue(currentType,"expenseCategory")) +
+        row("Payment Method",getValue(currentType,"paymentMethod")) +
+        row("Transaction Reference",getValue(currentType,"reference")) +
+        row("Description / Narration",getValue(currentType,"description")) +
+        row("Prepared By",getValue(currentType,"preparedBy")) +
+        row("Authorized By",getValue(currentType,"authorizedBy")) +
+        row("Signature",getValue(currentType,"signature"));
+
+    }
+  else {
+
+        title = "DELIVERY CHALLAN";
+        number = getValue(currentType,"challanNumber");
+        date = getValue(currentType,"challanDate");
+
+        let productRows = "";
+
+        document.querySelectorAll('#productTable tbody tr').forEach(tr => {
+            const inputs = tr.querySelectorAll('input');
+
+            productRows += `<tr>
+            <td>${escapeHTML(inputs[0].value)}</td>
+            <td>${escapeHTML(inputs[1].value)}</td>
+            <td>${escapeHTML(inputs[2].value)}</td>
+            <td>${escapeHTML(inputs[3].value)}</td>
+            <td>${escapeHTML(inputs[4].value)}</td>
+            </tr>`;
+        });
+
+                        
                     </div>
+                 
 
                     <!-- Search & Filter Bar -->
                     <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm grid grid-cols-1 sm:grid-cols-3 gap-4">
