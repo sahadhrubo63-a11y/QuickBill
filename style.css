@@ -1,9 +1,8 @@
-/* Custom Global Styles for POS & Inventory Pro Suite */
+/* Custom Global Styles for POS, Vouchers & Admin Verification Suite */
 body {
     font-family: 'Inter', sans-serif;
 }
 
-/* Interactive Hover & Transition Effects */
 .interactive-hover {
     transition: all 0.2s ease-in-out;
 }
@@ -12,7 +11,25 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Custom Scrollbar for Tables & Containers */
+/* Custom Animated Effects */
+.cut-out-anim {
+    animation: cutOut 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+}
+@keyframes cutOut {
+    0% { transform: scale(1) rotate(0deg); opacity: 1; }
+    50% { transform: scale(0.8) rotate(-10deg); opacity: 0.5; }
+    100% { transform: scale(0) rotate(45deg); opacity: 0; }
+}
+
+.pop-in-anim {
+    animation: popIn 0.4s ease-out forwards;
+}
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Scrollbar Customization */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -28,24 +45,10 @@ body {
     background: #94a3b8;
 }
 
-/* Print Specific Rules for Vouchers, Challans & Invoices */
 @media print {
     body * {
         visibility: hidden;
     }
-    
-    #voucher-preview-modal, #voucher-preview-modal * {
-        visibility: visible;
-    }
-    #voucher-preview-modal {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        background: white !important;
-        box-shadow: none !important;
-    }
-    
     #print-area, #print-area * {
         visibility: visible;
     }
@@ -56,7 +59,6 @@ body {
         width: 100%;
         background: white !important;
     }
-
     .no-print {
         display: none !important;
     }
