@@ -4,7 +4,6 @@
 const POSApp = (function() {
     let activeUser = null;
     
-    // প্রি-ডিফাইন্ড ডিফল্ট অ্যাডমিন বা লোকাল স্টোরেজ ইউজার ডেটা
     let dbUsers = JSON.parse(localStorage.getItem('pos_users')) || {
         "admin": {
             "username": "admin",
@@ -64,13 +63,13 @@ const POSApp = (function() {
                 oscillator.stop(audioCtx.currentTime + 0.08);
             }
         } catch(e) {
-            console.log('Audio Context suppressed or not allowed.');
+            console.log('Audio Context suppressed.');
         }
     }
 
     return {
         init: function() {
-            saveToLocalStorage(); // নিশ্চিত করার জন্য যে ডিফল্ট অ্যাডমিন লোড হয়েছে
+            saveToLocalStorage();
             this.checkAutoLogin();
             this.initBarcodeScannerListener();
         },
@@ -222,7 +221,6 @@ const POSApp = (function() {
             this.loadApplication();
         },
 
-        /* BUSINESS DOCUMENTS MANAGEMENT */
         uploadBusinessDocument: function() {
             const titleInput = document.getElementById('doc-title');
             const fileInput = document.getElementById('doc-file-input');
@@ -237,9 +235,7 @@ const POSApp = (function() {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const base64Data = e.target.result;
-                if (!dbUsers[activeUser].documents) {
-                    dbUsers[activeUser].documents = [];
-                }
+                if (!dbUsers[activeUser].documents) dbUsers[activeUser].documents = [];
                 dbUsers[activeUser].documents.push({
                     title: title,
                     fileData: base64Data,
@@ -248,7 +244,6 @@ const POSApp = (function() {
                 });
                 saveToLocalStorage();
                 this.renderBusinessDocuments();
-                
                 titleInput.value = '';
                 fileInput.value = '';
                 alert('Document successfully uploaded!');
@@ -282,16 +277,9 @@ const POSApp = (function() {
         viewDocument: function(index) {
             const doc = dbUsers[activeUser].documents[index];
             if (!doc) return;
-
             document.getElementById('modal-doc-title').innerText = doc.title;
             const contentDiv = document.getElementById('modal-doc-content');
-            contentDiv.innerHTML = '';
-
-            if (doc.fileType.includes('pdf')) {
-                contentDiv.innerHTML = `<iframe src="${doc.fileData}" class="w-full h-[60vh] border rounded"></iframe>`;
-            } else {
-                contentDiv.innerHTML = `<img src="${doc.fileData}" class="max-w-full h-auto rounded object-contain" alt="${escapeHTML(doc.title)}">`;
-            }
+            contentDiv.innerHTML = doc.fileType.includes('pdf') ? `<iframe src="${doc.fileData}" class="w-full h-[60vh] border rounded"></iframe>` : `<img src="${doc.fileData}" class="max-w-full h-auto rounded object-contain" alt="${escapeHTML(doc.title)}">`;
             document.getElementById('doc-modal').classList.remove('hidden');
         },
 
@@ -302,7 +290,6 @@ const POSApp = (function() {
         downloadDocument: function(index) {
             const doc = dbUsers[activeUser].documents[index];
             if (!doc) return;
-
             const a = document.createElement('a');
             a.href = doc.fileData;
             a.download = doc.fileName || `Business_Doc_${index + 1}`;
@@ -616,7 +603,7 @@ const POSApp = (function() {
             }
         },
 
-        /* POS CORE LOGIC */
+        /* POS CORE LOGIC & INVENTORY */
         updatePOSUnitDisplay: function() {
             const select = document.getElementById('bill-product-select');
             const badge = document.getElementById('pos-unit-badge');
@@ -862,4 +849,174 @@ const POSApp = (function() {
                 alert('Fill out required fields accurately!'); 
                 return; 
             }
+
             const barcode = skuInput ? skuInput : "SKU" + Math.floor(10000 + Math.random() * 90000);
+
+            dbUsers[activeUser].inventory.push({
+                name, barcode, qty, unit, buy, sell, discount, vat, gift, minStock
+            });
+
+            saveToLocalStorage();
+            this.renderInventory();
+
+            document.getElementById('inv-name').value = '';
+            document.getElementById('inv-sku').value = '';
+            document.getElementById('inv-qty').value = '';
+            document.getElementById('inv-buy').value = '';
+            document.getElementById('inv-sell').value = '';
+            document.getElementById('inv-discount').value = '0';
+            document.getElementById('inv-vat').value = '0';
+            document.getElementById('inv-gift').value = '';
+
+            alert('Product successfully added to inventory!');
+        },
+
+        downloadBarcodeImage: function(barcodeText) {
+            const svgElement = document.getElementById(`barcode-${barcodeText}`);
+            if (!svgElement) return;
+
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+
+            img.onload = function() {
+                canvas.width = img.width + 40;
+                canvas.height = img.height + 40;
+                ctx.fillStyle = "#FFFFFF";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 20, 20);
+
+                const a = document.createElement("a");
+                a.href = canvas.toDataURL("image/png");
+                a.download = `Barcode_${barcodeText}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+        },
+
+        processFinalInvoice: function() {
+            if (cart.length === 0) { alert('Cart is empty!'); return; }
+
+            const payMethod = document.getElementById('bill-pay-method').value;
+            const receiveStatus = document.getElementById('bill-receive-status').value;
+            const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+            const paidInput = parseFloat(document.getElementById('bill-paid-input').value) || 0;
+
+            const paidAmount = receiveStatus === 'Unpaid' ? 0 : paidInput;
+            const dueAmount = Math.max(0, grandTotal - paidAmount);
+
+            cart.forEach(cartItem => {
+                const invItem = dbUsers[activeUser].inventory[cartItem.inventoryIndex];
+                if (invItem) {
+                    invItem.qty -= cartItem.qty;
+                }
+            });
+
+            const transactionRecord = {
+                timestamp: new Date().toLocaleString(),
+                items: [...cart],
+                grossTotal: grandTotal,
+                paidAmount: paidAmount,
+                dueAmount: dueAmount,
+                method: payMethod
+            };
+
+            dbUsers[activeUser].statements.push(transactionRecord);
+            saveToLocalStorage();
+
+            this.renderPrintableReceiptModal(transactionRecord);
+            cart = [];
+            this.renderCart();
+            this.renderInventory();
+            this.renderStatements();
+        },
+
+        renderPrintableReceiptModal: function(tx) {
+            document.getElementById('bill-date').innerText = tx.timestamp;
+            const tbody = document.getElementById('bill-items-body');
+            tbody.innerHTML = '';
+
+            tx.items.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-0.5">${escapeHTML(item.name)}</td>
+                        <td class="text-right py-0.5">${item.qty} ${escapeHTML(item.unit)}</td>
+                        <td class="text-right py-0.5">${item.price.toFixed(2)}</td>
+                        <td class="text-right py-0.5">${item.total.toFixed(2)}</td>
+                    </tr>`;
+            });
+
+            document.getElementById('bill-total-price').innerHTML = `Gross Total: <span class="font-bold">${tx.grossTotal.toFixed(2)}</span> TK`;
+            document.getElementById('bill-payment-type').innerText = tx.method;
+            document.getElementById('bill-paid-price').innerText = tx.paidAmount.toFixed(2);
+            document.getElementById('bill-due-price').innerText = tx.dueAmount.toFixed(2);
+            document.getElementById('bill-shop-name').innerText = dbUsers[activeUser].company;
+            document.getElementById('bill-shop-cat').innerText = dbUsers[activeUser].category || '';
+            document.getElementById('bill-shop-address').innerText = dbUsers[activeUser].address || '';
+            document.getElementById('bill-shop-helpline').innerText = `Helpline: ${dbUsers[activeUser].helpline || 'N/A'}`;
+
+            document.getElementById('print-area').classList.remove('hidden');
+        },
+
+        closeInvoiceView: function() {
+            document.getElementById('print-area').classList.add('hidden');
+        },
+
+        renderStatements: function() {
+            const statements = dbUsers[activeUser].statements || [];
+            const tbody = document.getElementById('statement-table-body');
+            tbody.innerHTML = '';
+
+            let totalSales = 0, totalReceived = 0, totalDue = 0;
+
+            statements.forEach(st => {
+                totalSales += st.grossTotal;
+                totalReceived += st.paidAmount;
+                totalDue += st.dueAmount;
+
+                tbody.innerHTML += `
+                    <tr class="text-sm">
+                        <td class="p-4 font-mono text-xs text-slate-500">${escapeHTML(st.timestamp)}</td>
+                        <td class="p-4 font-bold text-slate-800">${st.grossTotal.toFixed(2)} TK</td>
+                        <td class="p-4 font-semibold text-emerald-600">${st.paidAmount.toFixed(2)} TK</td>
+                        <td class="p-4 font-semibold text-rose-600">${st.dueAmount.toFixed(2)} TK</td>
+                        <td class="p-4">${escapeHTML(st.method)}</td>
+                    </tr>`;
+            });
+
+            if (statements.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400">No financial ledger entries recorded yet.</td></tr>`;
+            }
+
+            document.getElementById('widget-total-sales').innerText = `${totalSales.toFixed(2)} TK`;
+            document.getElementById('widget-total-received').innerText = `${totalReceived.toFixed(2)} TK`;
+            document.getElementById('widget-total-due').innerText = `${totalDue.toFixed(2)} TK`;
+        },
+
+        handleDownloadCSV: function() {
+            const statements = dbUsers[activeUser].statements || [];
+            if (statements.length === 0) { alert('No statement data available to download!'); return; }
+
+            let csvContent = "data:text/csv;charset=utf-8,Timestamp,Gross Total,Paid Amount,Due Amount,Payment Method\n";
+            statements.forEach(st => {
+                csvContent += `"${st.timestamp}",${st.grossTotal},${st.paidAmount},${st.dueAmount},"${st.method}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Financial_Statement_${activeUser}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+})();
+
+window.addEventListener('DOMContentLoaded', () => {
+    POSApp.init();
+});
