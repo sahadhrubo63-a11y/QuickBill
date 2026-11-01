@@ -17,32 +17,67 @@
 </head>
 <body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
 
-    <!-- AUTHENTICATION CONTAINER (Admin-Assigned Login Only) -->
+    <!-- AUTHENTICATION CONTAINER -->
     <div id="auth-container" class="flex-grow flex items-center justify-center p-4">
         
         <!-- LOGIN CARD -->
         <div id="login-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 transition-all">
             <div class="text-center mb-8">
                 <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">POS PRO v5.0</span>
-                <h2 class="text-3xl font-bold text-slate-900 mt-2">Merchant Sign In</h2>
-                <p class="text-sm text-slate-500 mt-1">Use the Username & Password provided by Admin</p>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2">Sign In</h2>
+                <p class="text-sm text-slate-500 mt-1">Access your business dashboard</p>
             </div>
             <form onsubmit="event.preventDefault(); POSApp.handleLogin();" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Assigned Username</label>
-                    <input type="text" id="login-username" required class="w-full border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="Enter username">
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username / Email</label>
+                    <input type="text" id="login-username" required class="w-full border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="Username or Email">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Password</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-600 uppercase">Password</label>
+                        <button type="button" onclick="POSApp.showAuthScreen('forgot-card')" class="text-xs text-indigo-600 font-semibold hover:underline">Forgot Password?</button>
+                    </div>
                     <div class="relative">
                         <input type="password" id="login-password" required class="w-full border border-slate-200 p-3 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="••••••••">
                         <button type="button" onclick="POSApp.togglePasswordVisibility('login-password')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">👁️</button>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-200 interactive-hover">Login to Software</button>
+                <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-200 interactive-hover">Login</button>
             </form>
             <div class="text-center mt-6">
-                <p class="text-xs text-slate-500">Need access? Please contact your system Administrator for registration verification and credential assignment.</p>
+                <p class="text-xs text-slate-400">Note: Account credentials are provided by Administrator.</p>
+            </div>
+        </div>
+
+        <!-- FORGOT PASSWORD CARD -->
+        <div id="forgot-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 hidden transition-all">
+            <div class="text-center mb-6">
+                <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Account Recovery</span>
+                <h2 class="text-3xl font-bold text-slate-900 mt-2">Reset Password</h2>
+            </div>
+            <form id="forgot-form-step1" onsubmit="event.preventDefault(); POSApp.sendForgotOTP();" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Registered Email Address</label>
+                    <input type="email" id="forgot-email" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="name@company.com">
+                </div>
+                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm">Send Reset OTP</button>
+            </form>
+            <form id="forgot-form-step2" onsubmit="event.preventDefault(); POSApp.resetPassword();" class="space-y-3 hidden">
+                <div class="bg-amber-50 border border-amber-100 p-3 rounded-lg text-center">
+                    <p class="text-xs text-amber-800">OTP code sent to <strong id="forgot-email-display"></strong></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Enter 6-Digit OTP</label>
+                    <input type="text" id="forgot-otp-input" maxlength="6" required class="w-full border border-slate-200 p-2.5 rounded-lg text-center font-mono text-lg tracking-widest font-bold" placeholder="000000">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">New Strong Password</label>
+                    <input type="password" id="forgot-new-password" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm">Update Password</button>
+            </form>
+            <div class="text-center mt-4">
+                <button onclick="POSApp.showAuthScreen('login-card')" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Login</button>
             </div>
         </div>
     </div>
