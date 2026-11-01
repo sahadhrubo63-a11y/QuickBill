@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Merchant & Business Registration Portal</title>
+  <title>Merchant Registration & Admin Control System</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Receipt+Font&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -44,7 +44,7 @@
       }
     }
 
-    /* Billing Paper Receipt Edge Tear Effect */
+    /* Receipt Tear Effect */
     .receipt-edge {
       position: relative;
       background: #ffffff;
@@ -72,319 +72,1049 @@
       background-size: 16px 20px;
       transform: rotate(180deg);
     }
+
+    /* Modal Animation */
+    @keyframes modalPop {
+      0% { opacity: 0; transform: scale(0.95) translateY(20px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .animate-modal {
+      animation: modalPop 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* Card Reject Strike/Cut Animation */
+    @keyframes rejectCut {
+      0% { transform: scale(1) rotate(0deg); opacity: 1; }
+      30% { transform: scale(1.03) rotate(-2deg); opacity: 0.9; }
+      100% { transform: scale(0.8) translateY(100px) rotate(12deg); opacity: 0; }
+    }
+
+    .animate-reject-cut {
+      animation: rejectCut 0.6s ease-in forwards;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
   </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+<body class="bg-slate-950 text-slate-100 min-h-screen">
 
-  <div class="max-w-4xl mx-auto">
-    
-    <!-- REGISTRATION FORM CONTAINER -->
-    <div id="formContainer" class="bg-slate-800 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500">
-      
-      <!-- Header -->
-      <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 sm:p-8 text-white">
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Business Merchant Registration</h1>
-        <p class="text-blue-100 mt-2 text-sm sm:text-base">Please complete all fields to submit your onboarding verification request.</p>
+  <!-- TOP GLOBAL NAVIGATION BAR -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-600/30">
+          <i class="fa-solid fa-shield-halved text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-slate-100 text-base leading-tight">Merchant Identity System</h1>
+          <p class="text-[11px] text-slate-400">Integrated User & Admin Portal</p>
+        </div>
       </div>
 
-      <!-- Form Body -->
-      <form id="registrationForm" onsubmit="handleRegistration(event)" class="p-6 sm:p-8 space-y-8">
+      <!-- PORTAL SWITCHER TABS -->
+      <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+        <button id="tabUserPortalBtn" onclick="switchMainPortal('user')" class="px-4 py-2 rounded-lg transition-all duration-200 text-white bg-blue-600 shadow">
+          <i class="fa-solid me-1.5 fa-user-plus"></i> User Registration
+        </button>
+        <button id="tabAdminPortalBtn" onclick="switchMainPortal('admin')" class="px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center gap-2">
+          <i class="fa-solid fa-user-shield"></i> Admin Control Panel
+          <span id="badgePendingCount" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WRAPPER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 1: USER REGISTRATION PORTAL -->
+    <!-- ========================================================================= -->
+    <div id="userPortalSection" class="transition-all duration-300">
+      
+      <!-- FORM CONTAINER -->
+      <div id="formContainer" class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-w-4xl mx-auto">
         
-        <!-- Section 1: Personal Profile Information -->
-        <div>
-          <h2 class="text-lg font-bold text-blue-400 border-b border-slate-700 pb-2 mb-4 flex items-center gap-2">
-            <i class="fa-solid me-1 fa-user-gear"></i> Personal Information
-          </h2>
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 sm:p-8 text-white">
+          <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Business Merchant Registration</h2>
+          <p class="text-blue-100 mt-2 text-sm">Fill out the mandatory details. Your registration will be sent to Admin for verification.</p>
+        </div>
+
+        <!-- Form Body -->
+        <form id="registrationForm" onsubmit="handleRegistrationSubmit(event)" class="p-6 sm:p-8 space-y-8">
           
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <!-- Full Name -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Full Name <span class="text-red-500">*</span></label>
-              <input type="text" id="fullName" required placeholder="e.g. Dhrubo Saha" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <!-- Personal Information -->
+          <div>
+            <h3 class="text-lg font-bold text-blue-400 border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
+              <i class="fa-solid me-1 fa-user"></i> Personal Information
+            </h3>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Full Name <span class="text-red-500">*</span></label>
+                <input type="text" id="regFullName" required placeholder="e.g. Dhrubo Saha" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Requested Username <span class="text-red-500">*</span></label>
+                <input type="text" id="regUsername" required placeholder="e.g. dhrubosaha" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
+                <input type="tel" id="regPhone" required placeholder="+880 1700-000000" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Email Address <span class="text-red-500">*</span></label>
+                <input type="email" id="regEmail" required placeholder="dhrubo@example.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+                <input type="date" id="regDob" required onchange="calculateUserAge()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Age (Auto-Calculated)</label>
+                <input type="text" id="regAge" readonly placeholder="Select Date of Birth" class="w-full bg-slate-900 border border-slate-800 text-slate-400 rounded-lg px-4 py-2.5 cursor-not-allowed font-medium text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Nationality <span class="text-red-500">*</span></label>
+                <input type="text" id="regNationality" required placeholder="e.g. Bangladeshi" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">District <span class="text-red-500">*</span></label>
+                <input type="text" id="regDistrict" required placeholder="e.g. Khulna" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
             </div>
 
-            <!-- Username -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Username <span class="text-red-500">*</span></label>
-              <input type="text" id="username" required placeholder="e.g. dhrubosaha" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <!-- Phone Number -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
-              <input type="tel" id="phoneNumber" required placeholder="+880 1XXXX-XXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <!-- Email Address -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Email Address <span class="text-red-500">*</span></label>
-              <input type="email" id="email" required placeholder="example@domain.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <!-- Date of Birth -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Date of Birth <span class="text-red-500">*</span></label>
-              <input type="date" id="dob" required onchange="calculateAge()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <!-- Auto Calculated Age -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Age (Auto-Calculated)</label>
-              <input type="text" id="calculatedAge" readonly placeholder="Select DOB above" class="w-full bg-slate-950 border border-slate-800 text-slate-400 rounded-lg px-4 py-2.5 cursor-not-allowed font-medium">
-            </div>
-
-            <!-- Nationality -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Nationality <span class="text-red-500">*</span></label>
-              <input type="text" id="nationality" required placeholder="e.g. Bangladeshi" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <!-- District -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">District <span class="text-red-500">*</span></label>
-              <input type="text" id="district" required placeholder="e.g. Khulna" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- Addresses -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Home Address <span class="text-red-500">*</span></label>
+                <textarea id="regHomeAddress" rows="2" required placeholder="Street address, house number, area..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Permanent Address (NID / Passport) <span class="text-red-500">*</span></label>
+                <textarea id="regPermAddress" rows="2" required placeholder="Address exactly as on NID or Passport..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
+              </div>
             </div>
           </div>
 
-          <!-- Address Fields -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Current/Home Address <span class="text-red-500">*</span></label>
-              <textarea id="homeAddress" rows="2" required placeholder="Enter street name, house number, area details..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+          <!-- Business Details -->
+          <div>
+            <h3 class="text-lg font-bold text-blue-400 border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
+              <i class="fa-solid me-1 fa-building-store"></i> Shop & Business Information
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Shop / Outlet / Company Name <span class="text-red-500">*</span></label>
+                <input type="text" id="regCompanyName" required placeholder="e.g. Daily Mart" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Business Category <span class="text-red-500">*</span></label>
+                <select id="regCategory" required class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                  <option value="" disabled selected>Select Category</option>
+                  <option value="Retail & E-commerce">Retail & E-commerce</option>
+                  <option value="Food & Catering Services">Food & Catering Services</option>
+                  <option value="IT & Software Development">IT & Software Development</option>
+                  <option value="Digital Marketing & Printing">Digital Marketing & Printing</option>
+                  <option value="Wholesale Trading">Wholesale Trading</option>
+                </select>
+              </div>
             </div>
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Permanent Address (NID / Passport) <span class="text-red-500">*</span></label>
-              <textarea id="permanentAddress" rows="2" required placeholder="As stated on NID or Passport document..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+
+            <div class="mt-5">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Commercial / Outlet Address <span class="text-red-500">*</span></label>
+              <input type="text" id="regShopAddress" required placeholder="Premise address, market/building location..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
             </div>
+          </div>
+
+          <!-- Documents & Images Uploads -->
+          <div>
+            <h3 class="text-lg font-bold text-blue-400 border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
+              <i class="fa-solid me-1 fa-file-arrow-up"></i> Mandatory Uploads
+            </h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div class="bg-slate-950 p-4 border border-slate-800 rounded-xl">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                  Upload NID or Passport <span class="text-red-500">*</span>
+                </label>
+                <input type="file" id="regNidDoc" required accept="image/*,.pdf" onchange="previewFile(this, 'nidPreview')" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+                <div id="nidPreview" class="mt-2 text-[11px] text-blue-400 hidden"></div>
+              </div>
+
+              <div class="bg-slate-950 p-4 border border-slate-800 rounded-xl">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                  Upload Profile Picture <span class="text-red-500">*</span>
+                </label>
+                <input type="file" id="regPhoto" required accept="image/*" onchange="previewFile(this, 'photoPreview')" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+                <div id="photoPreview" class="mt-2 text-[11px] text-blue-400 hidden"></div>
+              </div>
+
+              <div class="bg-slate-950 p-4 border border-slate-800 rounded-xl">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                  Upload Trade License <span class="text-red-500">*</span>
+                </label>
+                <input type="file" id="regTradeDoc" required accept="image/*,.pdf" onchange="previewFile(this, 'tradePreview')" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+                <div id="tradePreview" class="mt-2 text-[11px] text-blue-400 hidden"></div>
+              </div>
+
+              <div class="bg-slate-950 p-4 border border-slate-800 rounded-xl">
+                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                  Upload Business Logo <span class="text-red-500">*</span>
+                </label>
+                <input type="file" id="regLogoDoc" required accept="image/*" onchange="previewFile(this, 'logoPreview')" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+                <div id="logoPreview" class="mt-2 text-[11px] text-blue-400 hidden"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-4 border-t border-slate-800">
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl transition duration-200 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-base">
+              <i class="fa-solid fa-paper-plane"></i> Submit Registration to Admin
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- SUCCESS BILLING VOUCHER DISPLAY -->
+      <div id="successView" class="hidden flex-col items-center justify-center my-6 space-y-6">
+        
+        <div class="bg-slate-900 p-6 rounded-full border border-slate-800 shadow-2xl">
+          <svg class="w-20 h-20" viewBox="0 0 52 52">
+            <circle class="checkmark-circle" cx="26" cy="26" r="23"/>
+            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+          </svg>
+        </div>
+
+        <div class="receipt-edge w-full max-w-md bg-white text-slate-900 p-8 rounded-sm shadow-2xl receipt-font border-t-2 border-b-2 border-dashed border-slate-400 my-4">
+          <div class="text-center pb-4 border-b border-dashed border-slate-400">
+            <h3 class="text-xl font-bold uppercase tracking-wider text-slate-900">REGISTRATION RECEIPT</h3>
+            <p class="text-xs text-slate-600 mt-1">Application Submitted to Admin</p>
+            <div class="text-[11px] text-slate-500 mt-2" id="userReceiptDate">DATE: --/--/----</div>
+          </div>
+
+          <div class="py-4 border-b border-dashed border-slate-400 text-xs space-y-2">
+            <div class="flex justify-between">
+              <span class="text-slate-500">REF DOCKET:</span>
+              <span class="font-bold text-slate-800" id="userReceiptRef">REG-000000</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">APPLICANT:</span>
+              <span class="font-bold text-slate-800" id="userReceiptName">---</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">USERNAME:</span>
+              <span class="font-bold text-slate-800" id="userReceiptUsername">---</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">BUSINESS:</span>
+              <span class="font-bold text-slate-800" id="userReceiptCompany">---</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500">STATUS:</span>
+              <span class="font-bold text-amber-600">PENDING ADMIN VERIFICATION</span>
+            </div>
+          </div>
+
+          <div class="py-5 text-center leading-relaxed text-xs font-semibold text-slate-800 border-b border-dashed border-slate-400">
+            Thank you for your registration, we received your registration, please wait for some time. If your registration is verified we will send your username and password of your phone and email or if it reject we notify you.
+          </div>
+
+          <div class="pt-4 text-center">
+            <p class="text-[10px] text-slate-500 uppercase tracking-widest">*** System Generated Voucher ***</p>
           </div>
         </div>
 
-        <!-- Section 2: Business & Enterprise Details -->
-        <div>
-          <h2 class="text-lg font-bold text-blue-400 border-b border-slate-700 pb-2 mb-4 flex items-center gap-2">
-            <i class="fa-solid me-1 fa-store"></i> Company & Business Details
-          </h2>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <!-- Shop/Company Name -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Shop / Outlet / Company Name <span class="text-red-500">*</span></label>
-              <input type="text" id="companyName" required placeholder="e.g. Daily Mart Express" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-
-            <!-- Business Category -->
-            <div>
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Business Category <span class="text-red-500">*</span></label>
-              <select id="businessCategory" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="" disabled selected>Select Category</option>
-                <option value="Retail & E-commerce">Retail & E-commerce</option>
-                <option value="Food & Catering">Food & Catering</option>
-                <option value="IT & Software Development">IT & Software Development</option>
-                <option value="Advertising & Marketing">Advertising & Marketing</option>
-                <option value="Wholesale & Distribution">Wholesale & Distribution</option>
-                <option value="Services & Logistics">Services & Logistics</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Business Outlet Address -->
-          <div class="mt-5">
-            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Shop/Outlet Commercial Address <span class="text-red-500">*</span></label>
-            <input type="text" id="businessAddress" required placeholder="Commercial premise location, floor, plot details..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
-          </div>
-        </div>
-
-        <!-- Section 3: Documents & File Uploads -->
-        <div>
-          <h2 class="text-lg font-bold text-blue-400 border-b border-slate-700 pb-2 mb-4 flex items-center gap-2">
-            <i class="fa-solid me-1 fa-file-shield"></i> Identification & Verification Documents
-          </h2>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <!-- NID / Passport Upload -->
-            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Upload NID / Passport Document <span class="text-red-500">*</span>
-              </label>
-              <input type="file" id="nidDocument" required accept="image/*,.pdf" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-            </div>
-
-            <!-- Profile Picture Upload -->
-            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Upload Personal Profile Picture <span class="text-red-500">*</span>
-              </label>
-              <input type="file" id="profilePhoto" required accept="image/*" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-            </div>
-
-            <!-- Trade License Upload -->
-            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Upload Trade License Document <span class="text-red-500">*</span>
-              </label>
-              <input type="file" id="tradeLicense" required accept="image/*,.pdf" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-            </div>
-
-            <!-- Business Logo Upload -->
-            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
-              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Upload Official Business Logo <span class="text-red-500">*</span>
-              </label>
-              <input type="file" id="businessLogo" required accept="image/*" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
-            </div>
-          </div>
-        </div>
-
-        <!-- Submit Button -->
-        <div class="pt-4 border-t border-slate-700">
-          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl transition duration-200 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-base">
-            <i class="fa-solid fa-paper-plane"></i> Complete & Submit Registration
+        <div class="flex gap-4">
+          <button onclick="window.location.reload()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-medium px-5 py-2.5 rounded-xl text-xs transition">
+            <i class="fa-solid fa-plus me-1"></i> Submit Another Request
+          </button>
+          <button onclick="switchMainPortal('admin')" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/30">
+            <i class="fa-solid fa-user-shield me-1"></i> Open Admin Panel
           </button>
         </div>
 
-      </form>
+      </div>
+
     </div>
 
 
-    <!-- SUCCESS & BILLING RECEIPT DISPLAY CONTAINER (Hidden Initially) -->
-    <div id="successView" class="hidden flex-col items-center justify-center my-6 space-y-8 animate-fade-in">
+    <!-- ========================================================================= -->
+    <!-- SECTION 2: ADMIN CONTROL PANEL -->
+    <!-- ========================================================================= -->
+    <div id="adminPortalSection" class="hidden transition-all duration-300">
       
-      <!-- Animated SVG Checkmark -->
-      <div class="bg-slate-800 p-6 rounded-full border border-slate-700 shadow-2xl">
-        <svg class="w-24 h-24" viewBox="0 0 52 52">
-          <circle class="checkmark-circle" cx="26" cy="26" r="23"/>
-          <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-        </svg>
+      <!-- Admin Top Metrics Bar -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
+          <div class="bg-amber-500/10 text-amber-400 p-3 rounded-xl border border-amber-500/20">
+            <i class="fa-solid fa-inbox text-xl"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Applications Came</p>
+            <h4 class="text-xl font-extrabold text-slate-100" id="statPendingCount">0</h4>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
+          <div class="bg-emerald-500/10 text-emerald-400 p-3 rounded-xl border border-emerald-500/20">
+            <i class="fa-solid fa-circle-check text-xl"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Approved Merchants</p>
+            <h4 class="text-xl font-extrabold text-slate-100" id="statApprovedCount">0</h4>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
+          <div class="bg-rose-500/10 text-rose-400 p-3 rounded-xl border border-rose-500/20">
+            <i class="fa-solid fa-ban text-xl"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Rejected Applications</p>
+            <h4 class="text-xl font-extrabold text-slate-100" id="statRejectedCount">0</h4>
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
+          <div class="bg-indigo-500/10 text-indigo-400 p-3 rounded-xl border border-indigo-500/20">
+            <i class="fa-solid fa-user-slash text-xl"></i>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Delisted Accounts</p>
+            <h4 class="text-xl font-extrabold text-slate-100" id="statDelistedCount">0</h4>
+          </div>
+        </div>
       </div>
 
-      <!-- Billing Paper Voucher Receipt -->
-      <div class="receipt-edge w-full max-w-md bg-white text-slate-900 p-8 rounded-sm shadow-2xl receipt-font border-t-2 border-b-2 border-dashed border-slate-400 my-4">
-        
-        <!-- Receipt Header -->
-        <div class="text-center pb-4 border-b border-dashed border-slate-400">
-          <h2 class="text-xl font-bold uppercase tracking-wider text-slate-900">REGISTRATION RECEIPT</h2>
-          <p class="text-xs text-slate-600 mt-1">Merchant Application Docket</p>
-          <div class="text-xs text-slate-500 mt-2" id="receiptTimestamp">DATE: --/--/----</div>
-        </div>
+      <!-- Admin Navigation Sub-Tabs -->
+      <div class="border-b border-slate-800 mb-6 flex flex-wrap gap-2 text-xs font-semibold">
+        <button id="adminTabApplicationsBtn" onclick="switchAdminSubTab('applications')" class="px-5 py-3 border-b-2 border-blue-500 text-blue-400 flex items-center gap-2">
+          <i class="fa-solid fa-layer-group"></i> Applications Came
+          <span id="tabBadgePending" class="bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full text-[10px]">0</span>
+        </button>
 
-        <!-- Receipt Serial Info -->
-        <div class="py-4 border-b border-dashed border-slate-400 text-xs space-y-1.5">
-          <div class="flex justify-between">
-            <span class="text-slate-500">REF DOCKET:</span>
-            <span class="font-bold text-slate-800" id="receiptId">REG-000000</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">APPLICANT:</span>
-            <span class="font-bold text-slate-800" id="receiptApplicant">---</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">USERNAME:</span>
-            <span class="font-bold text-slate-800" id="receiptUsername">---</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">BUSINESS:</span>
-            <span class="font-bold text-slate-800" id="receiptCompany">---</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">CATEGORY:</span>
-            <span class="font-bold text-slate-800" id="receiptCategory">---</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">CONTACT:</span>
-            <span class="font-bold text-slate-800" id="receiptPhone">---</span>
-          </div>
-          <div class="flex justify-between">
-            <span class="text-slate-500">STATUS:</span>
-            <span class="font-bold text-amber-600">PENDING VERIFICATION</span>
-          </div>
-        </div>
+        <button id="adminTabApprovedBtn" onclick="switchAdminSubTab('approved')" class="px-5 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-circle-check"></i> Approved Section
+          <span id="tabBadgeApproved" class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full text-[10px]">0</span>
+        </button>
 
-        <!-- Official Status Message -->
-        <div class="py-5 text-center leading-relaxed text-xs sm:text-sm font-semibold text-slate-800 border-b border-dashed border-slate-400">
-          Thank you for your registration. We have received your submission. Please wait for some time. If your registration is verified, we will send your username and password to your phone and email; or if it is rejected, we will notify you.
-        </div>
+        <button id="adminTabRejectedBtn" onclick="switchAdminSubTab('rejected')" class="px-5 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-circle-xmark"></i> Rejected Section
+          <span id="tabBadgeRejected" class="bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded-full text-[10px]">0</span>
+        </button>
 
-        <!-- Receipt Footer -->
-        <div class="pt-4 text-center">
-          <p class="text-[10px] text-slate-500 uppercase tracking-widest">*** System Generated Copy ***</p>
-          <p class="text-[10px] text-slate-400 mt-1">Keep this receipt reference for your tracking.</p>
-        </div>
-
+        <button id="adminTabDelistedBtn" onclick="switchAdminSubTab('delisted')" class="px-5 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2">
+          <i class="fa-solid fa-user-xmark"></i> Delisted Section
+          <span id="tabBadgeDelisted" class="bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full text-[10px]">0</span>
+        </button>
       </div>
 
-      <!-- Action Button -->
-      <button onclick="window.location.reload()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold px-6 py-2.5 rounded-lg text-sm transition">
-        <i class="fa-solid fa-rotate-right me-1"></i> Submit Another Registration
-      </button>
+
+      <!-- SUB-TAB 1: APPLICATIONS CAME (PENDING REQUESTS) -->
+      <div id="subTabApplications" class="space-y-4">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-400">Incoming Registration Applications</h3>
+          <span class="text-xs text-slate-500">Click any card to inspect full profile fullscreen & process credentials</span>
+        </div>
+        <div id="pendingListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Dynamically Rendered -->
+        </div>
+      </div>
+
+      <!-- SUB-TAB 2: APPROVED SECTION WITH SOFTWARE ANALYTICS -->
+      <div id="subTabApproved" class="hidden space-y-4">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-400">Active & Approved Merchants</h3>
+          <span class="text-xs text-slate-500">Monitors status, views, and login telemetry</span>
+        </div>
+        <div id="approvedListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Dynamically Rendered -->
+        </div>
+      </div>
+
+      <!-- SUB-TAB 3: REJECTED SECTION -->
+      <div id="subTabRejected" class="hidden space-y-4">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-rose-400">Rejected Applications</h3>
+          <span class="text-xs text-slate-500">Applications marked rejected or permanently deleted</span>
+        </div>
+        <div id="rejectedListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <!-- Dynamically Rendered -->
+        </div>
+      </div>
+
+      <!-- SUB-TAB 4: DELISTED SECTION -->
+      <div id="subTabDelisted" class="hidden space-y-4">
+        <div class="flex justify-between items-center mb-2">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-indigo-400">Delisted Accounts (Access Revoked)</h3>
+          <span class="text-xs text-slate-500">Re-enlist users here to restore login authorization</span>
+        </div>
+        <div id="delistedListContainer" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Dynamically Rendered -->
+        </div>
+      </div>
 
     </div>
 
+  </main>
+
+
+  <!-- ========================================================================= -->
+  <!-- FULLSCREEN USER PROFILE ANIMATED MODAL (ADMIN REVIEW & VERIFY) -->
+  <!-- ========================================================================= -->
+  <div id="adminFullModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden overflow-y-auto p-4 sm:p-6 md:p-10 transition-all duration-300">
+    <div id="adminModalContent" class="max-w-5xl mx-auto bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-modal my-auto">
+      
+      <!-- Modal Header Bar -->
+      <div class="bg-slate-950 px-6 py-4 border-b border-slate-800 flex justify-between items-center sticky top-0 z-10">
+        <div class="flex items-center gap-3">
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-500/10 text-blue-400 border border-blue-500/20" id="modalStatusBadge">PENDING</span>
+          <h3 class="text-lg font-bold text-slate-100" id="modalTitle">Applicant Profile Inspection</h3>
+        </div>
+        <button onclick="closeAdminModal()" class="text-slate-400 hover:text-white p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 sm:p-8 space-y-8 max-h-[75vh] overflow-y-auto">
+        
+        <!-- Applicant Hero Header -->
+        <div class="flex flex-col sm:flex-row items-center gap-6 bg-slate-950/70 p-6 rounded-2xl border border-slate-800">
+          <img id="modalProfileImg" src="" alt="Profile" class="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl object-cover border-2 border-blue-500 shadow-xl bg-slate-800">
+          <div class="text-center sm:text-left space-y-2 flex-1">
+            <h2 class="text-2xl font-extrabold text-white" id="modalFullName">---</h2>
+            <div class="flex flex-wrap justify-center sm:justify-start gap-3 text-xs text-slate-300">
+              <span class="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700/60"><i class="fa-solid fa-at text-blue-400 me-1"></i> <span id="modalReqUsername">--</span></span>
+              <span class="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700/60"><i class="fa-solid fa-building text-blue-400 me-1"></i> <span id="modalCompanyName">--</span></span>
+              <span class="bg-slate-800 px-3 py-1 rounded-lg border border-slate-700/60"><i class="fa-solid fa-tag text-blue-400 me-1"></i> <span id="modalCategory">--</span></span>
+            </div>
+            <p class="text-xs text-slate-400 pt-1"><i class="fa-solid fa-calendar me-1"></i> Submitted: <span id="modalSubmittedAt">--</span></p>
+          </div>
+        </div>
+
+        <!-- Personal & Business Grid Data -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- Personal Details -->
+          <div class="bg-slate-950/40 p-5 rounded-xl border border-slate-800/80 space-y-3">
+            <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider pb-2 border-b border-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-user-check"></i> Personal & Identification Data
+            </h4>
+            <div class="text-xs space-y-2">
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">Phone:</span> <span class="font-medium text-slate-200" id="modalPhone">--</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">Email:</span> <span class="font-medium text-slate-200" id="modalEmail">--</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">Date of Birth:</span> <span class="font-medium text-slate-200" id="modalDob">--</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">Calculated Age:</span> <span class="font-medium text-slate-200" id="modalAge">--</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">Nationality:</span> <span class="font-medium text-slate-200" id="modalNationality">--</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">District:</span> <span class="font-medium text-slate-200" id="modalDistrict">--</span></div>
+              <div class="pt-1"><span class="text-slate-400 block mb-1">Home Address:</span> <span class="font-medium text-slate-200 bg-slate-900 p-2 rounded block" id="modalHomeAddress">--</span></div>
+              <div class="pt-1"><span class="text-slate-400 block mb-1">Permanent Address (NID/Passport):</span> <span class="font-medium text-slate-200 bg-slate-900 p-2 rounded block" id="modalPermAddress">--</span></div>
+            </div>
+          </div>
+
+          <!-- Business Details & Upload Cards -->
+          <div class="bg-slate-950/40 p-5 rounded-xl border border-slate-800/80 space-y-3">
+            <h4 class="text-xs font-bold text-blue-400 uppercase tracking-wider pb-2 border-b border-slate-800 flex items-center gap-2">
+              <i class="fa-solid fa-store"></i> Enterprise & Uploaded Attachments
+            </h4>
+            <div class="text-xs space-y-2 mb-4">
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">Shop / Outlet Name:</span> <span class="font-medium text-slate-200" id="modalShopName">--</span></div>
+              <div class="flex justify-between py-1 border-b border-slate-800/40"><span class="text-slate-400">Category:</span> <span class="font-medium text-slate-200" id="modalShopCat">--</span></div>
+              <div class="pt-1"><span class="text-slate-400 block mb-1">Commercial Address:</span> <span class="font-medium text-slate-200 bg-slate-900 p-2 rounded block" id="modalShopAddress">--</span></div>
+            </div>
+
+            <!-- Documents Attachments Preview Cards -->
+            <div class="grid grid-cols-3 gap-3 pt-2">
+              <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                <i class="fa-solid fa-id-card text-lg text-blue-400 mb-1 block"></i>
+                <span class="text-[10px] text-slate-300 font-semibold block">NID / Passport</span>
+                <span class="text-[9px] text-slate-500 block truncate" id="modalNidName">file.pdf</span>
+              </div>
+              <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                <i class="fa-solid fa-file-contract text-lg text-amber-400 mb-1 block"></i>
+                <span class="text-[10px] text-slate-300 font-semibold block">Trade License</span>
+                <span class="text-[9px] text-slate-500 block truncate" id="modalTradeName">license.pdf</span>
+              </div>
+              <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800 text-center">
+                <i class="fa-solid fa-image text-lg text-emerald-400 mb-1 block"></i>
+                <span class="text-[10px] text-slate-300 font-semibold block">Business Logo</span>
+                <span class="text-[9px] text-slate-500 block truncate" id="modalLogoName">logo.png</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Credentials Assignment Form Block (Visible for Pending Request) -->
+        <div id="credentialAssignmentBox" class="bg-slate-950 p-6 rounded-2xl border border-blue-500/30 space-y-4">
+          <h4 class="text-sm font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-key text-amber-400"></i> Admin Access Authorization & Credential Assignment
+          </h4>
+          <p class="text-xs text-slate-400">Assign authorized Username & Password to issue approval notification SMS/Email to user.</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Assigned Username</label>
+              <input type="text" id="assignUsername" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Assigned Password</label>
+              <input type="text" id="assignPassword" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Actions Footer -->
+      <div class="bg-slate-950 px-6 py-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
+        
+        <!-- Left Side Action: Permanent Delete -->
+        <button id="btnDeleteUser" onclick="deleteUserRecord()" class="bg-rose-950/80 hover:bg-rose-900 border border-rose-800/80 text-rose-300 px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
+          <i class="fa-solid fa-trash-can"></i> Delete from Database
+        </button>
+
+        <!-- Right Side Actions: Approve / Reject -->
+        <div class="flex items-center gap-3 ms-auto" id="pendingActionGroup">
+          <button id="btnRejectUser" onclick="rejectUserRecord()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
+            <i class="fa-solid fa-ban text-rose-400"></i> Reject Application
+          </button>
+          
+          <button id="btnApproveUser" onclick="approveUserRecord()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition shadow-lg shadow-emerald-600/30 flex items-center gap-2">
+            <i class="fa-solid fa-check"></i> Approved & Send Credentials
+          </button>
+        </div>
+
+      </div>
+
+    </div>
   </div>
 
+
+  <!-- SYSTEM JAVASCRIPT LOGIC -->
   <script>
-    // Automatic Age Calculation Function
-    function calculateAge() {
-      const dobInput = document.getElementById('dob').value;
-      if (!dobInput) return;
-
-      const dob = new Date(dobInput);
-      const today = new Date();
-
-      let ageYears = today.getFullYear() - dob.getFullYear();
-      let ageMonths = today.getMonth() - dob.getMonth();
-      let ageDays = today.getDate() - dob.getDate();
-
-      if (ageDays < 0) {
-        ageMonths--;
-        const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
-        ageDays += prevMonth.getDate();
+    // GLOBAL DATABASE STATE IN LOCAL STORAGE OR IN-MEMORY
+    let registrationDatabase = JSON.parse(localStorage.getItem('merchant_db')) || [
+      {
+        id: "REG-948201",
+        fullName: "Dhrubo Saha",
+        requestedUsername: "dhrubosaha",
+        phone: "+880 1711-223344",
+        email: "dhrubosaha@gmail.com",
+        dob: "2005-05-16",
+        age: "21 Yrs, 5 Mos, 16 Days",
+        nationality: "Bangladeshi",
+        district: "Khulna",
+        homeAddress: "Shibbari Circle, Sonadanga, Khulna",
+        permAddress: "Holding 42, Main Road, Khulna",
+        companyName: "Daily Mart",
+        category: "Retail & E-commerce",
+        shopAddress: "KDA Avenue Commercial Complex, Khulna",
+        photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=300",
+        nidDocName: "NID_Dhrubo_Saha.pdf",
+        tradeDocName: "Trade_License_DailyMart.pdf",
+        logoDocName: "DailyMart_Logo.png",
+        status: "pending", // pending, approved, rejected, delisted
+        assignedUsername: "dhrubosaha",
+        assignedPassword: "UserPass@2026",
+        submittedAt: "2026-11-01 10:30 AM",
+        userStatus: "Active", // Active or Inactive
+        lastActiveTime: "2 mins ago",
+        softwareViews: 14
+      },
+      {
+        id: "REG-837192",
+        fullName: "Tapashi Saha",
+        requestedUsername: "tapashisaha",
+        phone: "+880 1819-887766",
+        email: "tapashi@mishtanna.com",
+        dob: "1988-08-12",
+        age: "38 Yrs, 2 Mos",
+        nationality: "Bangladeshi",
+        district: "Khulna",
+        homeAddress: "Royal Mor, Khulna",
+        permAddress: "Royal Mor, Khulna",
+        companyName: "মিষ্টান্ন Catering Services",
+        category: "Food & Catering Services",
+        shopAddress: "Khan Jahan Ali Road, Khulna",
+        photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300",
+        nidDocName: "NID_Tapashi.pdf",
+        tradeDocName: "Trade_Mishtanna.pdf",
+        logoDocName: "Mishtanna_Logo.png",
+        status: "approved",
+        assignedUsername: "tapashisaha",
+        assignedPassword: "SweetPass#99",
+        submittedAt: "2026-10-28 04:15 PM",
+        userStatus: "Active",
+        lastActiveTime: "10 mins ago",
+        softwareViews: 42
       }
+    ];
 
-      if (ageMonths < 0) {
-        ageYears--;
-        ageMonths += 12;
-      }
+    let activeModalUserId = null;
 
-      if (ageYears < 0) {
-        document.getElementById('calculatedAge').value = "Invalid Birth Date";
+    // SAVE DATA TO LOCAL STORAGE
+    function saveData() {
+      localStorage.setItem('merchant_db', JSON.stringify(registrationDatabase));
+      renderAdminView();
+    }
+
+    // MAIN NAVIGATION SWITCHING
+    function switchMainPortal(portal) {
+      const userTab = document.getElementById('tabUserPortalBtn');
+      const adminTab = document.getElementById('tabAdminPortalBtn');
+      const userSec = document.getElementById('userPortalSection');
+      const adminSec = document.getElementById('adminPortalSection');
+
+      if (portal === 'user') {
+        userTab.className = "px-4 py-2 rounded-lg transition-all duration-200 text-white bg-blue-600 shadow";
+        adminTab.className = "px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center gap-2";
+        userSec.classList.remove('hidden');
+        adminSec.classList.add('hidden');
       } else {
-        document.getElementById('calculatedAge').value = `${ageYears} Yrs, ${ageMonths} Mos, ${ageDays} Days`;
+        adminTab.className = "px-4 py-2 rounded-lg transition-all duration-200 text-white bg-blue-600 shadow flex items-center gap-2";
+        userTab.className = "px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
+        adminSec.classList.remove('hidden');
+        userSec.classList.add('hidden');
+        renderAdminView();
       }
     }
 
-    // Handle Registration Submission
-    function handleRegistration(e) {
+    // ADMIN SUB TAB SWITCHING
+    function switchAdminSubTab(tab) {
+      const tabs = ['applications', 'approved', 'rejected', 'delisted'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`adminTab${capitalize(t)}Btn`);
+        const sec = document.getElementById(`subTab${capitalize(t)}`);
+        
+        if (t === tab) {
+          btn.className = "px-5 py-3 border-b-2 border-blue-500 text-blue-400 flex items-center gap-2 font-bold";
+          sec.classList.remove('hidden');
+        } else {
+          btn.className = "px-5 py-3 border-b-2 border-transparent text-slate-400 hover:text-slate-200 flex items-center gap-2";
+          sec.classList.add('hidden');
+        }
+      });
+    }
+
+    function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    }
+
+    // CALCULATE AGE AUTOMATICALLY
+    function calculateUserAge() {
+      const dobVal = document.getElementById('regDob').value;
+      if (!dobVal) return;
+
+      const dob = new Date(dobVal);
+      const today = new Date();
+
+      let years = today.getFullYear() - dob.getFullYear();
+      let months = today.getMonth() - dob.getMonth();
+      let days = today.getDate() - dob.getDate();
+
+      if (days < 0) {
+        months--;
+        const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        days += prevMonth.getDate();
+      }
+
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+
+      document.getElementById('regAge').value = `${years} Yrs, ${months} Mos, ${days} Days`;
+    }
+
+    // FILE PREVIEW NAME HELPER
+    function previewFile(input, previewId) {
+      const preview = document.getElementById(previewId);
+      if (input.files && input.files[0]) {
+        preview.textContent = "Selected: " + input.files[0].name;
+        preview.classList.remove('hidden');
+      }
+    }
+
+    // HANDLE REGISTRATION SUBMISSION
+    function handleRegistrationSubmit(e) {
       e.preventDefault();
 
-      // Retrieve submitted data for Billing Receipt
-      const fullName = document.getElementById('fullName').value;
-      const username = document.getElementById('username').value;
-      const companyName = document.getElementById('companyName').value;
-      const category = document.getElementById('businessCategory').value;
-      const phone = document.getElementById('phoneNumber').value;
+      const newId = 'REG-' + Math.floor(100000 + Math.random() * 900000);
+      const fullName = document.getElementById('regFullName').value;
+      const username = document.getElementById('regUsername').value;
+      const phone = document.getElementById('regPhone').value;
+      const email = document.getElementById('regEmail').value;
+      const dob = document.getElementById('regDob').value;
+      const age = document.getElementById('regAge').value;
+      const nationality = document.getElementById('regNationality').value;
+      const district = document.getElementById('regDistrict').value;
+      const homeAddress = document.getElementById('regHomeAddress').value;
+      const permAddress = document.getElementById('regPermAddress').value;
+      const companyName = document.getElementById('regCompanyName').value;
+      const category = document.getElementById('regCategory').value;
+      const shopAddress = document.getElementById('regShopAddress').value;
 
-      // Fill Receipt Details
-      document.getElementById('receiptApplicant').innerText = fullName;
-      document.getElementById('receiptUsername').innerText = '@' + username;
-      document.getElementById('receiptCompany').innerText = companyName;
-      document.getElementById('receiptCategory').innerText = category;
-      document.getElementById('receiptPhone').innerText = phone;
-      document.getElementById('receiptId').innerText = 'REG-' + Math.floor(100000 + Math.random() * 900000);
-      document.getElementById('receiptTimestamp').innerText = 'TIMESTAMP: ' + new Date().toLocaleString();
+      const photoInput = document.getElementById('regPhoto');
+      const nidInput = document.getElementById('regNidDoc');
+      const tradeInput = document.getElementById('regTradeDoc');
+      const logoInput = document.getElementById('regLogoDoc');
 
-      // Transition Views
+      // Sample mock image preview for new submission
+      const sampleAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300";
+
+      const newRecord = {
+        id: newId,
+        fullName,
+        requestedUsername: username,
+        phone,
+        email,
+        dob,
+        age: age || "20 Yrs",
+        nationality,
+        district,
+        homeAddress,
+        permAddress,
+        companyName,
+        category,
+        shopAddress,
+        photoUrl: sampleAvatar,
+        nidDocName: nidInput.files[0] ? nidInput.files[0].name : "NID_Document.pdf",
+        tradeDocName: tradeInput.files[0] ? tradeInput.files[0].name : "Trade_License.pdf",
+        logoDocName: logoInput.files[0] ? logoInput.files[0].name : "Company_Logo.png",
+        status: "pending",
+        assignedUsername: username,
+        assignedPassword: "Pass" + Math.floor(1000 + Math.random() * 9000),
+        submittedAt: new Date().toLocaleString(),
+        userStatus: "Active",
+        lastActiveTime: "Just now",
+        softwareViews: 1
+      };
+
+      registrationDatabase.unshift(newRecord);
+      saveData();
+
+      // UI Receipt update
+      document.getElementById('userReceiptRef').innerText = newId;
+      document.getElementById('userReceiptName').innerText = fullName;
+      document.getElementById('userReceiptUsername').innerText = '@' + username;
+      document.getElementById('userReceiptCompany').innerText = companyName;
+      document.getElementById('userReceiptDate').innerText = 'DATE: ' + new Date().toLocaleDateString();
+
       const formContainer = document.getElementById('formContainer');
       const successView = document.getElementById('successView');
 
       formContainer.classList.add('opacity-0', 'scale-95');
-      
       setTimeout(() => {
         formContainer.classList.add('hidden');
         successView.classList.remove('hidden');
         successView.classList.add('flex');
         window.scrollTo({ top: 0, behavior: 'smooth' });
-      }, 400);
+      }, 350);
     }
+
+
+    // RENDER ADMIN PANEL DATA & METRICS
+    function renderAdminView() {
+      const pendingList = registrationDatabase.filter(u => u.status === 'pending');
+      const approvedList = registrationDatabase.filter(u => u.status === 'approved');
+      const rejectedList = registrationDatabase.filter(u => u.status === 'rejected');
+      const delistedList = registrationDatabase.filter(u => u.status === 'delisted');
+
+      // Badges & Counters
+      document.getElementById('badgePendingCount').innerText = pendingList.length;
+      document.getElementById('statPendingCount').innerText = pendingList.length;
+      document.getElementById('statApprovedCount').innerText = approvedList.length;
+      document.getElementById('statRejectedCount').innerText = rejectedList.length;
+      document.getElementById('statDelistedCount').innerText = delistedList.length;
+
+      document.getElementById('tabBadgePending').innerText = pendingList.length;
+      document.getElementById('tabBadgeApproved').innerText = approvedList.length;
+      document.getElementById('tabBadgeRejected').innerText = rejectedList.length;
+      document.getElementById('tabBadgeDelisted').innerText = delistedList.length;
+
+      // Render 1: Applications Came (Pending)
+      const pContainer = document.getElementById('pendingListContainer');
+      if (pendingList.length === 0) {
+        pContainer.innerHTML = `<div class="col-span-full bg-slate-900 border border-slate-800 p-8 rounded-xl text-center text-slate-500">No incoming applications currently pending.</div>`;
+      } else {
+        pContainer.innerHTML = pendingList.map(u => `
+          <div id="card-${u.id}" onclick="openAdminModal('${u.id}')" class="bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/50 rounded-xl p-5 cursor-pointer transition duration-200 group shadow-lg flex flex-col justify-between">
+            <div class="flex items-start gap-4">
+              <img src="${u.photoUrl}" class="w-14 h-14 rounded-xl object-cover border border-slate-700 bg-slate-800">
+              <div class="flex-1 min-w-0">
+                <span class="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded font-bold uppercase">Pending Review</span>
+                <h4 class="text-base font-bold text-slate-100 truncate mt-1 group-hover:text-blue-400 transition">${u.fullName}</h4>
+                <p class="text-xs text-slate-400 truncate"><i class="fa-solid fa-store text-slate-500 me-1"></i> ${u.companyName}</p>
+                <p class="text-[11px] text-slate-500 mt-1"><i class="fa-solid fa-location-dot me-1"></i> ${u.district}</p>
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
+              <span><i class="fa-solid fa-phone text-slate-500"></i> ${u.phone}</span>
+              <span class="text-blue-400 font-semibold group-hover:translate-x-1 transition flex items-center gap-1">Inspect <i class="fa-solid fa-chevron-right text-[10px]"></i></span>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render 2: Approved Section (With software activity tracking)
+      const aContainer = document.getElementById('approvedListContainer');
+      if (approvedList.length === 0) {
+        aContainer.innerHTML = `<div class="col-span-full bg-slate-900 border border-slate-800 p-8 rounded-xl text-center text-slate-500">No approved users yet.</div>`;
+      } else {
+        aContainer.innerHTML = approvedList.map(u => `
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <img src="${u.photoUrl}" class="w-12 h-12 rounded-xl object-cover border border-emerald-500/40">
+                <div>
+                  <h4 class="text-base font-bold text-slate-100">${u.fullName}</h4>
+                  <p class="text-xs text-slate-400">@${u.assignedUsername} • ${u.companyName}</p>
+                </div>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${u.userStatus === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400'}">
+                <i class="fa-solid fa-circle text-[8px] me-1 ${u.userStatus === 'Active' ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}"></i> ${u.userStatus}
+              </span>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2 bg-slate-950 p-3 rounded-lg border border-slate-800/80 text-center text-xs">
+              <div>
+                <span class="text-[10px] text-slate-500 block">STATUS</span>
+                <span class="font-bold text-emerald-400">${u.userStatus}</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 block">ACTIVE TIME</span>
+                <span class="font-medium text-slate-300">${u.lastActiveTime}</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-slate-500 block">VIEWS</span>
+                <span class="font-bold text-blue-400">${u.softwareViews} Views</span>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-800">
+              <button onclick="toggleUserActiveStatus('${u.id}')" class="text-xs px-3 py-1.5 rounded-lg border ${u.userStatus === 'Active' ? 'border-amber-500/40 text-amber-400 bg-amber-500/10 hover:bg-amber-500/20' : 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10'} font-medium transition">
+                Toggle Active Status (${u.userStatus === 'Active' ? 'Set Inactive' : 'Set Active'})
+              </button>
+              
+              <button onclick="delistApprovedUser('${u.id}')" class="bg-indigo-950 hover:bg-indigo-900 border border-indigo-700/60 text-indigo-300 px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                <i class="fa-solid fa-user-xmark"></i> Delist Account
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render 3: Rejected Section
+      const rContainer = document.getElementById('rejectedListContainer');
+      if (rejectedList.length === 0) {
+        rContainer.innerHTML = `<div class="col-span-full bg-slate-900 border border-slate-800 p-8 rounded-xl text-center text-slate-500">No rejected applications.</div>`;
+      } else {
+        rContainer.innerHTML = rejectedList.map(u => `
+          <div class="bg-slate-900 border border-rose-950 rounded-xl p-5 shadow-lg space-y-3">
+            <div class="flex items-center gap-3">
+              <img src="${u.photoUrl}" class="w-12 h-12 rounded-xl object-cover border border-rose-800/40 opacity-75">
+              <div>
+                <h4 class="text-sm font-bold text-slate-300 line-through">${u.fullName}</h4>
+                <p class="text-xs text-rose-400">Application Rejected</p>
+              </div>
+            </div>
+            <p class="text-xs text-slate-400">${u.companyName} (${u.district})</p>
+            <div class="pt-2 border-t border-slate-800 flex justify-end">
+              <button onclick="deleteUserRecordById('${u.id}')" class="text-rose-400 hover:text-rose-300 text-xs flex items-center gap-1 font-semibold">
+                <i class="fa-solid fa-trash-can"></i> Permanently Delete
+              </button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Render 4: Delisted Section
+      const dContainer = document.getElementById('delistedListContainer');
+      if (delistedList.length === 0) {
+        dContainer.innerHTML = `<div class="col-span-full bg-slate-900 border border-slate-800 p-8 rounded-xl text-center text-slate-500">No delisted accounts.</div>`;
+      } else {
+        dContainer.innerHTML = delistedList.map(u => `
+          <div class="bg-slate-900 border border-indigo-900/60 rounded-xl p-5 shadow-lg flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <img src="${u.photoUrl}" class="w-12 h-12 rounded-xl object-cover border border-indigo-500/40 opacity-80">
+              <div>
+                <h4 class="text-sm font-bold text-slate-200">${u.fullName}</h4>
+                <p class="text-xs text-indigo-400">@${u.assignedUsername} • Access Revoked</p>
+              </div>
+            </div>
+
+            <button onclick="enlistUser('${u.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition shadow-md flex items-center gap-1.5">
+              <i class="fa-solid fa-user-check"></i> Enlist & Restore Login
+            </button>
+          </div>
+        `).join('');
+      }
+    }
+
+
+    // OPEN FULLSCREEN ANIMATED ADMIN MODAL
+    function openAdminModal(userId) {
+      const u = registrationDatabase.find(x => x.id === userId);
+      if (!u) return;
+
+      activeModalUserId = userId;
+
+      document.getElementById('modalProfileImg').src = u.photoUrl;
+      document.getElementById('modalFullName').innerText = u.fullName;
+      document.getElementById('modalReqUsername').innerText = '@' + u.requestedUsername;
+      document.getElementById('modalCompanyName').innerText = u.companyName;
+      document.getElementById('modalCategory').innerText = u.category;
+      document.getElementById('modalSubmittedAt').innerText = u.submittedAt;
+
+      document.getElementById('modalPhone').innerText = u.phone;
+      document.getElementById('modalEmail').innerText = u.email;
+      document.getElementById('modalDob').innerText = u.dob;
+      document.getElementById('modalAge').innerText = u.age;
+      document.getElementById('modalNationality').innerText = u.nationality;
+      document.getElementById('modalDistrict').innerText = u.district;
+      document.getElementById('modalHomeAddress').innerText = u.homeAddress;
+      document.getElementById('modalPermAddress').innerText = u.permAddress;
+
+      document.getElementById('modalShopName').innerText = u.companyName;
+      document.getElementById('modalShopCat').innerText = u.category;
+      document.getElementById('modalShopAddress').innerText = u.shopAddress;
+
+      document.getElementById('modalNidName').innerText = u.nidDocName;
+      document.getElementById('modalTradeName').innerText = u.tradeDocName;
+      document.getElementById('modalLogoName').innerText = u.logoDocName;
+
+      document.getElementById('assignUsername').value = u.assignedUsername || u.requestedUsername;
+      document.getElementById('assignPassword').value = u.assignedPassword || ('Pass' + Math.floor(1000 + Math.random() * 9000));
+
+      const statusBadge = document.getElementById('modalStatusBadge');
+      statusBadge.innerText = u.status.toUpperCase();
+
+      const modal = document.getElementById('adminFullModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAdminModal() {
+      const modal = document.getElementById('adminFullModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      activeModalUserId = null;
+    }
+
+
+    // APPROVE USER RECORD
+    function approveUserRecord() {
+      if (!activeModalUserId) return;
+      const user = registrationDatabase.find(x => x.id === activeModalUserId);
+      if (user) {
+        user.assignedUsername = document.getElementById('assignUsername').value || user.requestedUsername;
+        user.assignedPassword = document.getElementById('assignPassword').value || "User@123";
+        user.status = 'approved';
+        user.userStatus = 'Active';
+
+        saveData();
+        closeAdminModal();
+        alert(`✔ User Application Approved!\nCredentials dispatched to ${user.phone} & ${user.email}.\nAssigned Username: ${user.assignedUsername}`);
+      }
+    }
+
+    // REJECT USER RECORD WITH CUT ANIMATION
+    function rejectUserRecord() {
+      if (!activeModalUserId) return;
+
+      const card = document.getElementById(`card-${activeModalUserId}`);
+      const modalContent = document.getElementById('adminModalContent');
+
+      modalContent.classList.add('animate-reject-cut');
+
+      setTimeout(() => {
+        const user = registrationDatabase.find(x => x.id === activeModalUserId);
+        if (user) {
+          user.status = 'rejected';
+          saveData();
+        }
+        modalContent.classList.remove('animate-reject-cut');
+        closeAdminModal();
+      }, 550);
+    }
+
+    // PERMANENT DELETE USER RECORD FROM DATABASE
+    function deleteUserRecord() {
+      if (!activeModalUserId) return;
+      if (confirm('Are you sure you want to permanently remove this user record from the database?')) {
+        registrationDatabase = registrationDatabase.filter(x => x.id !== activeModalUserId);
+        saveData();
+        closeAdminModal();
+      }
+    }
+
+    function deleteUserRecordById(userId) {
+      if (confirm('Permanently delete this rejected record?')) {
+        registrationDatabase = registrationDatabase.filter(x => x.id !== userId);
+        saveData();
+      }
+    }
+
+    // TOGGLE ACTIVE / INACTIVE STATUS
+    function toggleUserActiveStatus(userId) {
+      const user = registrationDatabase.find(x => x.id === userId);
+      if (user) {
+        user.userStatus = user.userStatus === 'Active' ? 'Inactive' : 'Active';
+        saveData();
+      }
+    }
+
+    // DELIST USER
+    function delistApprovedUser(userId) {
+      const user = registrationDatabase.find(x => x.id === userId);
+      if (user) {
+        user.status = 'delisted';
+        user.userStatus = 'Inactive';
+        saveData();
+      }
+    }
+
+    // ENLIST USER
+    function enlistUser(userId) {
+      const user = registrationDatabase.find(x => x.id === userId);
+      if (user) {
+        user.status = 'approved';
+        user.userStatus = 'Active';
+        saveData();
+      }
+    }
+
+    // INITIAL RENDER
+    renderAdminView();
   </script>
 </body>
 </html>
