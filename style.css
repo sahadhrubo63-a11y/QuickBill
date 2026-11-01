@@ -12,7 +12,7 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar for Tables & Containers */
 ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
@@ -28,11 +28,26 @@ body {
     background: #94a3b8;
 }
 
-/* Print Specific Rules */
+/* Print Specific Rules for Vouchers, Challans & Invoices */
 @media print {
     body * {
         visibility: hidden;
     }
+    
+    /* Voucher / Challan Print View */
+    #voucher-preview-modal, #voucher-preview-modal * {
+        visibility: visible;
+    }
+    #voucher-preview-modal {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: white !important;
+        box-shadow: none !important;
+    }
+    
+    /* POS Bill Print View (if active) */
     #print-area, #print-area * {
         visibility: visible;
     }
@@ -43,6 +58,7 @@ body {
         width: 100%;
         background: white !important;
     }
+
     .no-print {
         display: none !important;
     }
