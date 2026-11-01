@@ -135,7 +135,7 @@
           <button id="tabUserPortalBtn" onclick="switchMainPortal('user')" class="px-4 py-2 rounded-lg transition-all duration-200 text-white bg-blue-600 shadow">
             <i class="fa-solid me-1.5 fa-user-plus"></i> User Registration
           </button>
-          <button id="tabAdminPortalBtn" onclick="switchMainPortal('admin')" class="px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center gap-2">
+          <button id="tabAdminPortalBtn" onclick="requestAdminAccess()" class="px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center gap-2">
             <i class="fa-solid fa-user-shield"></i> Admin Control Panel
             <span id="badgePendingCount" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
           </button>
@@ -492,6 +492,41 @@
 
 
   <!-- ========================================================================= -->
+  <!-- ADMIN LOGIN MODAL -->
+  <!-- ========================================================================= -->
+  <div id="adminLoginModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden items-center justify-center p-4">
+    <div class="max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 animate-modal space-y-6">
+      <div class="text-center">
+        <div class="bg-blue-600/10 text-blue-400 w-14 h-14 rounded-2xl border border-blue-500/20 flex items-center justify-center mx-auto mb-3 shadow-lg">
+          <i class="fa-solid fa-user-shield text-2xl"></i>
+        </div>
+        <h3 class="text-xl font-extrabold text-white">Admin Authentication</h3>
+        <p class="text-xs text-slate-400 mt-1">Please enter administrator credentials to access the Control Panel.</p>
+      </div>
+
+      <form onsubmit="handleAdminLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Username</label>
+          <input type="text" id="adminLoginUser" required placeholder="Enter username" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Password</label>
+          <input type="password" id="adminLoginPass" required placeholder="Enter password" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+        </div>
+
+        <div id="adminLoginError" class="text-rose-500 text-xs hidden text-center font-medium"></div>
+
+        <div class="flex gap-3 pt-2">
+          <button type="button" onclick="closeAdminLoginModal()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition">Cancel</button>
+          <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/30">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
   <!-- FULLSCREEN USER PROFILE ANIMATED MODAL (ADMIN REVIEW & VERIFY) -->
   <!-- ========================================================================= -->
   <div id="adminFullModal" class="fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md hidden overflow-y-auto p-4 sm:p-6 md:p-10 transition-all duration-300">
@@ -658,6 +693,7 @@
     ];
 
     let activeModalUserId = null;
+    let isAdminLoggedIn = sessionStorage.getItem('admin_logged_in') === 'true';
 
     // SYNCHRONIZE DATA TO `pos_users` SO INDEX.HTML CAN LET USERS LOGIN
     function syncToPOSDatabase() {
@@ -706,11 +742,56 @@
         userSec.classList.remove('hidden');
         adminSec.classList.add('hidden');
       } else {
+        if (!isAdminLoggedIn) {
+          openAdminLoginModal();
+          return;
+        }
         adminTab.className = "px-4 py-2 rounded-lg transition-all duration-200 text-white bg-blue-600 shadow flex items-center gap-2";
         userTab.className = "px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
         adminSec.classList.remove('hidden');
         userSec.classList.add('hidden');
         renderAdminView();
+      }
+    }
+
+    // ADMIN LOGIN VERIFICATION
+    function requestAdminAccess() {
+      if (isAdminLoggedIn) {
+        switchMainPortal('admin');
+      } else {
+        openAdminLoginModal();
+      }
+    }
+
+    function openAdminLoginModal() {
+      document.getElementById('adminLoginUser').value = '';
+      document.getElementById('adminLoginPass').value = '';
+      document.getElementById('adminLoginError').classList.add('hidden');
+      const modal = document.getElementById('adminLoginModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeAdminLoginModal() {
+      const modal = document.getElementById('adminLoginModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const uInput = document.getElementById('adminLoginUser').value.trim();
+      const pInput = document.getElementById('adminLoginPass').value.trim();
+      const errBox = document.getElementById('adminLoginError');
+
+      if (uInput === 'admin' && pInput === 'admin123') {
+        isAdminLoggedIn = true;
+        sessionStorage.setItem('admin_logged_in', 'true');
+        closeAdminLoginModal();
+        switchMainPortal('admin');
+      } else {
+        errBox.innerText = 'ভুল ইউজারনেম অথবা পাসওয়ার্ড! (Username: admin, Pass: admin123)';
+        errBox.classList.remove('hidden');
       }
     }
 
