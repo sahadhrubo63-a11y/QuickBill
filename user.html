@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Merchant & Business Registration Portal</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Receipt+Font&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .receipt-font {
+      font-family: 'Space Mono', monospace;
+    }
+
+    /* Checkmark Animation */
+    .checkmark-circle {
+      stroke-dasharray: 166;
+      stroke-dashoffset: 166;
+      stroke-width: 3;
+      stroke-miterlimit: 10;
+      stroke: #10B981;
+      fill: none;
+      animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark-check {
+      transform-origin: 50% 50%;
+      stroke-dasharray: 48;
+      stroke-dashoffset: 48;
+      stroke: #10B981;
+      animation: stroke 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.6s forwards;
+    }
+
+    @keyframes stroke {
+      100% {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    /* Billing Paper Receipt Edge Tear Effect */
+    .receipt-edge {
+      position: relative;
+      background: #ffffff;
+    }
+
+    .receipt-edge::after {
+      content: "";
+      position: absolute;
+      bottom: -12px;
+      left: 0;
+      width: 100%;
+      height: 12px;
+      background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+      background-size: 16px 20px;
+    }
+
+    .receipt-edge::before {
+      content: "";
+      position: absolute;
+      top: -12px;
+      left: 0;
+      width: 100%;
+      height: 12px;
+      background: radial-gradient(circle, transparent, transparent 50%, #ffffff 50%, #ffffff 100%);
+      background-size: 16px 20px;
+      transform: rotate(180deg);
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+
+  <div class="max-w-4xl mx-auto">
+    
+    <!-- REGISTRATION FORM CONTAINER -->
+    <div id="formContainer" class="bg-slate-800 border border-slate-700/80 rounded-2xl shadow-2xl overflow-hidden transition-all duration-500">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 sm:p-8 text-white">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Business Merchant Registration</h1>
+        <p class="text-blue-100 mt-2 text-sm sm:text-base">Please complete all fields to submit your onboarding verification request.</p>
+      </div>
+
+      <!-- Form Body -->
+      <form id="registrationForm" onsubmit="handleRegistration(event)" class="p-6 sm:p-8 space-y-8">
+        
+        <!-- Section 1: Personal Profile Information -->
+        <div>
+          <h2 class="text-lg font-bold text-blue-400 border-b border-slate-700 pb-2 mb-4 flex items-center gap-2">
+            <i class="fa-solid me-1 fa-user-gear"></i> Personal Information
+          </h2>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <!-- Full Name -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Full Name <span class="text-red-500">*</span></label>
+              <input type="text" id="fullName" required placeholder="e.g. Dhrubo Saha" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Username -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Username <span class="text-red-500">*</span></label>
+              <input type="text" id="username" required placeholder="e.g. dhrubosaha" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Phone Number -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Phone Number <span class="text-red-500">*</span></label>
+              <input type="tel" id="phoneNumber" required placeholder="+880 1XXXX-XXXXXX" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Email Address -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Email Address <span class="text-red-500">*</span></label>
+              <input type="email" id="email" required placeholder="example@domain.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Date of Birth -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Date of Birth <span class="text-red-500">*</span></label>
+              <input type="date" id="dob" required onchange="calculateAge()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Auto Calculated Age -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Age (Auto-Calculated)</label>
+              <input type="text" id="calculatedAge" readonly placeholder="Select DOB above" class="w-full bg-slate-950 border border-slate-800 text-slate-400 rounded-lg px-4 py-2.5 cursor-not-allowed font-medium">
+            </div>
+
+            <!-- Nationality -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Nationality <span class="text-red-500">*</span></label>
+              <input type="text" id="nationality" required placeholder="e.g. Bangladeshi" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- District -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">District <span class="text-red-500">*</span></label>
+              <input type="text" id="district" required placeholder="e.g. Khulna" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+          </div>
+
+          <!-- Address Fields -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5">
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Current/Home Address <span class="text-red-500">*</span></label>
+              <textarea id="homeAddress" rows="2" required placeholder="Enter street name, house number, area details..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Permanent Address (NID / Passport) <span class="text-red-500">*</span></label>
+              <textarea id="permanentAddress" rows="2" required placeholder="As stated on NID or Passport document..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 2: Business & Enterprise Details -->
+        <div>
+          <h2 class="text-lg font-bold text-blue-400 border-b border-slate-700 pb-2 mb-4 flex items-center gap-2">
+            <i class="fa-solid me-1 fa-store"></i> Company & Business Details
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <!-- Shop/Company Name -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Shop / Outlet / Company Name <span class="text-red-500">*</span></label>
+              <input type="text" id="companyName" required placeholder="e.g. Daily Mart Express" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Business Category -->
+            <div>
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Business Category <span class="text-red-500">*</span></label>
+              <select id="businessCategory" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="" disabled selected>Select Category</option>
+                <option value="Retail & E-commerce">Retail & E-commerce</option>
+                <option value="Food & Catering">Food & Catering</option>
+                <option value="IT & Software Development">IT & Software Development</option>
+                <option value="Advertising & Marketing">Advertising & Marketing</option>
+                <option value="Wholesale & Distribution">Wholesale & Distribution</option>
+                <option value="Services & Logistics">Services & Logistics</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Business Outlet Address -->
+          <div class="mt-5">
+            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">Shop/Outlet Commercial Address <span class="text-red-500">*</span></label>
+            <input type="text" id="businessAddress" required placeholder="Commercial premise location, floor, plot details..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          </div>
+        </div>
+
+        <!-- Section 3: Documents & File Uploads -->
+        <div>
+          <h2 class="text-lg font-bold text-blue-400 border-b border-slate-700 pb-2 mb-4 flex items-center gap-2">
+            <i class="fa-solid me-1 fa-file-shield"></i> Identification & Verification Documents
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <!-- NID / Passport Upload -->
+            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                Upload NID / Passport Document <span class="text-red-500">*</span>
+              </label>
+              <input type="file" id="nidDocument" required accept="image/*,.pdf" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+            </div>
+
+            <!-- Profile Picture Upload -->
+            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                Upload Personal Profile Picture <span class="text-red-500">*</span>
+              </label>
+              <input type="file" id="profilePhoto" required accept="image/*" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+            </div>
+
+            <!-- Trade License Upload -->
+            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                Upload Trade License Document <span class="text-red-500">*</span>
+              </label>
+              <input type="file" id="tradeLicense" required accept="image/*,.pdf" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+            </div>
+
+            <!-- Business Logo Upload -->
+            <div class="bg-slate-900/60 p-4 border border-slate-700 rounded-xl">
+              <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                Upload Official Business Logo <span class="text-red-500">*</span>
+              </label>
+              <input type="file" id="businessLogo" required accept="image/*" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500 cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-4 border-t border-slate-700">
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl transition duration-200 shadow-lg shadow-blue-600/30 flex items-center justify-center gap-2 text-base">
+            <i class="fa-solid fa-paper-plane"></i> Complete & Submit Registration
+          </button>
+        </div>
+
+      </form>
+    </div>
+
+
+    <!-- SUCCESS & BILLING RECEIPT DISPLAY CONTAINER (Hidden Initially) -->
+    <div id="successView" class="hidden flex-col items-center justify-center my-6 space-y-8 animate-fade-in">
+      
+      <!-- Animated SVG Checkmark -->
+      <div class="bg-slate-800 p-6 rounded-full border border-slate-700 shadow-2xl">
+        <svg class="w-24 h-24" viewBox="0 0 52 52">
+          <circle class="checkmark-circle" cx="26" cy="26" r="23"/>
+          <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+      </div>
+
+      <!-- Billing Paper Voucher Receipt -->
+      <div class="receipt-edge w-full max-w-md bg-white text-slate-900 p-8 rounded-sm shadow-2xl receipt-font border-t-2 border-b-2 border-dashed border-slate-400 my-4">
+        
+        <!-- Receipt Header -->
+        <div class="text-center pb-4 border-b border-dashed border-slate-400">
+          <h2 class="text-xl font-bold uppercase tracking-wider text-slate-900">REGISTRATION RECEIPT</h2>
+          <p class="text-xs text-slate-600 mt-1">Merchant Application Docket</p>
+          <div class="text-xs text-slate-500 mt-2" id="receiptTimestamp">DATE: --/--/----</div>
+        </div>
+
+        <!-- Receipt Serial Info -->
+        <div class="py-4 border-b border-dashed border-slate-400 text-xs space-y-1.5">
+          <div class="flex justify-between">
+            <span class="text-slate-500">REF DOCKET:</span>
+            <span class="font-bold text-slate-800" id="receiptId">REG-000000</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">APPLICANT:</span>
+            <span class="font-bold text-slate-800" id="receiptApplicant">---</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">USERNAME:</span>
+            <span class="font-bold text-slate-800" id="receiptUsername">---</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">BUSINESS:</span>
+            <span class="font-bold text-slate-800" id="receiptCompany">---</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">CATEGORY:</span>
+            <span class="font-bold text-slate-800" id="receiptCategory">---</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">CONTACT:</span>
+            <span class="font-bold text-slate-800" id="receiptPhone">---</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-slate-500">STATUS:</span>
+            <span class="font-bold text-amber-600">PENDING VERIFICATION</span>
+          </div>
+        </div>
+
+        <!-- Official Status Message -->
+        <div class="py-5 text-center leading-relaxed text-xs sm:text-sm font-semibold text-slate-800 border-b border-dashed border-slate-400">
+          Thank you for your registration. We have received your submission. Please wait for some time. If your registration is verified, we will send your username and password to your phone and email; or if it is rejected, we will notify you.
+        </div>
+
+        <!-- Receipt Footer -->
+        <div class="pt-4 text-center">
+          <p class="text-[10px] text-slate-500 uppercase tracking-widest">*** System Generated Copy ***</p>
+          <p class="text-[10px] text-slate-400 mt-1">Keep this receipt reference for your tracking.</p>
+        </div>
+
+      </div>
+
+      <!-- Action Button -->
+      <button onclick="window.location.reload()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold px-6 py-2.5 rounded-lg text-sm transition">
+        <i class="fa-solid fa-rotate-right me-1"></i> Submit Another Registration
+      </button>
+
+    </div>
+
+  </div>
+
+  <script>
+    // Automatic Age Calculation Function
+    function calculateAge() {
+      const dobInput = document.getElementById('dob').value;
+      if (!dobInput) return;
+
+      const dob = new Date(dobInput);
+      const today = new Date();
+
+      let ageYears = today.getFullYear() - dob.getFullYear();
+      let ageMonths = today.getMonth() - dob.getMonth();
+      let ageDays = today.getDate() - dob.getDate();
+
+      if (ageDays < 0) {
+        ageMonths--;
+        const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        ageDays += prevMonth.getDate();
+      }
+
+      if (ageMonths < 0) {
+        ageYears--;
+        ageMonths += 12;
+      }
+
+      if (ageYears < 0) {
+        document.getElementById('calculatedAge').value = "Invalid Birth Date";
+      } else {
+        document.getElementById('calculatedAge').value = `${ageYears} Yrs, ${ageMonths} Mos, ${ageDays} Days`;
+      }
+    }
+
+    // Handle Registration Submission
+    function handleRegistration(e) {
+      e.preventDefault();
+
+      // Retrieve submitted data for Billing Receipt
+      const fullName = document.getElementById('fullName').value;
+      const username = document.getElementById('username').value;
+      const companyName = document.getElementById('companyName').value;
+      const category = document.getElementById('businessCategory').value;
+      const phone = document.getElementById('phoneNumber').value;
+
+      // Fill Receipt Details
+      document.getElementById('receiptApplicant').innerText = fullName;
+      document.getElementById('receiptUsername').innerText = '@' + username;
+      document.getElementById('receiptCompany').innerText = companyName;
+      document.getElementById('receiptCategory').innerText = category;
+      document.getElementById('receiptPhone').innerText = phone;
+      document.getElementById('receiptId').innerText = 'REG-' + Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('receiptTimestamp').innerText = 'TIMESTAMP: ' + new Date().toLocaleString();
+
+      // Transition Views
+      const formContainer = document.getElementById('formContainer');
+      const successView = document.getElementById('successView');
+
+      formContainer.classList.add('opacity-0', 'scale-95');
+      
+      setTimeout(() => {
+        formContainer.classList.add('hidden');
+        successView.classList.remove('hidden');
+        successView.classList.add('flex');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 400);
+    }
+  </script>
+</body>
+</html>
