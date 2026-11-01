@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -127,14 +127,19 @@
       </div>
 
       <!-- PORTAL SWITCHER TABS -->
-      <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
-        <button id="tabUserPortalBtn" onclick="switchMainPortal('user')" class="px-4 py-2 rounded-lg transition-all duration-200 text-white bg-blue-600 shadow">
-          <i class="fa-solid me-1.5 fa-user-plus"></i> User Registration
-        </button>
-        <button id="tabAdminPortalBtn" onclick="switchMainPortal('admin')" class="px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center gap-2">
-          <i class="fa-solid fa-user-shield"></i> Admin Control Panel
-          <span id="badgePendingCount" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
-        </button>
+      <div class="flex items-center gap-3">
+        <a href="index (4).html" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-3 py-2 rounded-lg transition shadow flex items-center gap-1.5">
+          <i class="fa-solid fa-right-to-bracket"></i> Go to POS Login
+        </a>
+        <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+          <button id="tabUserPortalBtn" onclick="switchMainPortal('user')" class="px-4 py-2 rounded-lg transition-all duration-200 text-white bg-blue-600 shadow">
+            <i class="fa-solid me-1.5 fa-user-plus"></i> User Registration
+          </button>
+          <button id="tabAdminPortalBtn" onclick="switchMainPortal('admin')" class="px-4 py-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-white flex items-center gap-2">
+            <i class="fa-solid fa-user-shield"></i> Admin Control Panel
+            <span id="badgePendingCount" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -355,9 +360,9 @@
           <button onclick="window.location.reload()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-medium px-5 py-2.5 rounded-xl text-xs transition">
             <i class="fa-solid fa-plus me-1"></i> Submit Another Request
           </button>
-          <button onclick="switchMainPortal('admin')" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2.5 rounded-xl text-xs transition shadow-lg shadow-blue-600/30">
-            <i class="fa-solid fa-user-shield me-1"></i> Open Admin Panel
-          </button>
+          <a href="index (4).html" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2.5 rounded-xl text-xs transition shadow-lg shadow-indigo-600/30 flex items-center gap-1.5">
+            <i class="fa-solid fa-right-to-bracket"></i> Login to POS Suite
+          </a>
         </div>
 
       </div>
@@ -578,7 +583,7 @@
           <h4 class="text-sm font-bold text-white flex items-center gap-2">
             <i class="fa-solid fa-key text-amber-400"></i> Admin Access Authorization & Credential Assignment
           </h4>
-          <p class="text-xs text-slate-400">Assign authorized Username & Password to issue approval notification SMS/Email to user.</p>
+          <p class="text-xs text-slate-400">Assign authorized Username & Password to issue approval notification SMS/Email to user and sync directly with POS Login system.</p>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -619,10 +624,10 @@
   </div>
 
 
-  <!-- SYSTEM JAVASCRIPT LOGIC -->
+  <!-- SYSTEM JAVASCRIPT & SYNC LOGIC -->
   <script>
-    // GLOBAL DATABASE STATE IN LOCAL STORAGE OR IN-MEMORY
-    let registrationDatabase = JSON.parse(localStorage.getItem('merchant_db')) || [
+    // SHARED DATABASE STORAGE SYNC WITH `pos_users` (USED BY index (4).html & script (3).js)
+    let registrationDatabase = JSON.parse(localStorage.getItem('merchant_registration_db')) || [
       {
         id: "REG-948201",
         fullName: "Dhrubo Saha",
@@ -642,49 +647,50 @@
         nidDocName: "NID_Dhrubo_Saha.pdf",
         tradeDocName: "Trade_License_DailyMart.pdf",
         logoDocName: "DailyMart_Logo.png",
-        status: "pending", // pending, approved, rejected, delisted
+        status: "approved",
         assignedUsername: "dhrubosaha",
         assignedPassword: "UserPass@2026",
         submittedAt: "2026-11-01 10:30 AM",
-        userStatus: "Active", // Active or Inactive
+        userStatus: "Active",
         lastActiveTime: "2 mins ago",
         softwareViews: 14
-      },
-      {
-        id: "REG-837192",
-        fullName: "Tapashi Saha",
-        requestedUsername: "tapashisaha",
-        phone: "+880 1819-887766",
-        email: "tapashi@mishtanna.com",
-        dob: "1988-08-12",
-        age: "38 Yrs, 2 Mos",
-        nationality: "Bangladeshi",
-        district: "Khulna",
-        homeAddress: "Royal Mor, Khulna",
-        permAddress: "Royal Mor, Khulna",
-        companyName: "মিষ্টান্ন Catering Services",
-        category: "Food & Catering Services",
-        shopAddress: "Khan Jahan Ali Road, Khulna",
-        photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=300",
-        nidDocName: "NID_Tapashi.pdf",
-        tradeDocName: "Trade_Mishtanna.pdf",
-        logoDocName: "Mishtanna_Logo.png",
-        status: "approved",
-        assignedUsername: "tapashisaha",
-        assignedPassword: "SweetPass#99",
-        submittedAt: "2026-10-28 04:15 PM",
-        userStatus: "Active",
-        lastActiveTime: "10 mins ago",
-        softwareViews: 42
       }
     ];
 
     let activeModalUserId = null;
 
-    // SAVE DATA TO LOCAL STORAGE
-    function saveData() {
-      localStorage.setItem('merchant_db', JSON.stringify(registrationDatabase));
+    // SYNCHRONIZE DATA TO `pos_users` SO INDEX.HTML CAN LET USERS LOGIN
+    function syncToPOSDatabase() {
+      let posUsers = JSON.parse(localStorage.getItem('pos_users')) || {};
+      
+      // Sync only approved users into POS login database
+      registrationDatabase.forEach(u => {
+        if (u.status === 'approved' && u.assignedUsername) {
+          posUsers[u.assignedUsername] = {
+            username: u.assignedUsername,
+            email: u.email,
+            password: u.assignedPassword || "password123",
+            company: u.companyName,
+            category: u.category,
+            inventory: posUsers[u.assignedUsername] ? posUsers[u.assignedUsername].inventory : [],
+            statements: posUsers[u.assignedUsername] ? posUsers[u.assignedUsername].statements : [],
+            vouchers: posUsers[u.assignedUsername] ? posUsers[u.assignedUsername].vouchers : [],
+            address: u.shopAddress,
+            helpline: u.phone,
+            dp: u.photoUrl,
+            documents: posUsers[u.assignedUsername] ? posUsers[u.assignedUsername].documents : []
+          };
+        }
+      });
+
+      localStorage.setItem('pos_users', JSON.stringify(posUsers));
+      localStorage.setItem('merchant_registration_db', JSON.stringify(registrationDatabase));
       renderAdminView();
+    }
+
+    // SAVE DATA
+    function saveData() {
+      syncToPOSDatabase();
     }
 
     // MAIN NAVIGATION SWITCHING
@@ -783,12 +789,10 @@
       const category = document.getElementById('regCategory').value;
       const shopAddress = document.getElementById('regShopAddress').value;
 
-      const photoInput = document.getElementById('regPhoto');
       const nidInput = document.getElementById('regNidDoc');
       const tradeInput = document.getElementById('regTradeDoc');
       const logoInput = document.getElementById('regLogoDoc');
 
-      // Sample mock image preview for new submission
       const sampleAvatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=300";
 
       const newRecord = {
@@ -885,7 +889,7 @@
         `).join('');
       }
 
-      // Render 2: Approved Section (With software activity tracking)
+      // Render 2: Approved Section
       const aContainer = document.getElementById('approvedListContainer');
       if (approvedList.length === 0) {
         aContainer.innerHTML = `<div class="col-span-full bg-slate-900 border border-slate-800 p-8 rounded-xl text-center text-slate-500">No approved users yet.</div>`;
@@ -1031,7 +1035,7 @@
     }
 
 
-    // APPROVE USER RECORD
+    // APPROVE USER RECORD AND SYNC CREDENTIALS TO LOGIN
     function approveUserRecord() {
       if (!activeModalUserId) return;
       const user = registrationDatabase.find(x => x.id === activeModalUserId);
@@ -1041,9 +1045,9 @@
         user.status = 'approved';
         user.userStatus = 'Active';
 
-        saveData();
+        saveData(); // Automatically syncs to `pos_users` for index.html login
         closeAdminModal();
-        alert(`✔ User Application Approved!\nCredentials dispatched to ${user.phone} & ${user.email}.\nAssigned Username: ${user.assignedUsername}`);
+        alert(`✔ User Application Approved & Synced with POS Login!\nCredentials dispatched to ${user.phone} & ${user.email}.\n\nAssigned Username: ${user.assignedUsername}\nAssigned Password: ${user.assignedPassword}`);
       }
     }
 
@@ -1051,9 +1055,7 @@
     function rejectUserRecord() {
       if (!activeModalUserId) return;
 
-      const card = document.getElementById(`card-${activeModalUserId}`);
       const modalContent = document.getElementById('adminModalContent');
-
       modalContent.classList.add('animate-reject-cut');
 
       setTimeout(() => {
@@ -1099,6 +1101,12 @@
       if (user) {
         user.status = 'delisted';
         user.userStatus = 'Inactive';
+        // Remove from POS active logins if delisted
+        let posUsers = JSON.parse(localStorage.getItem('pos_users')) || {};
+        if (posUsers[user.assignedUsername]) {
+          delete posUsers[user.assignedUsername];
+          localStorage.setItem('pos_users', JSON.stringify(posUsers));
+        }
         saveData();
       }
     }
@@ -1113,8 +1121,8 @@
       }
     }
 
-    // INITIAL RENDER
-    renderAdminView();
+    // INITIAL SYNC AND RENDER ON LOAD
+    syncToPOSDatabase();
   </script>
 </body>
 </html>
