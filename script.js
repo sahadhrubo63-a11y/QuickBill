@@ -1,27 +1,32 @@
 /**
- * Enterprise POS Engine Namespace with Admin-Assigned Authentication
+ * Enterprise POS Engine Namespace with Vouchers, Challans & Admin-Controlled Accounts
  */
 const POSApp = (function() {
     let activeUser = null;
+    
+    // প্রি-ডিফাইন্ড ডিফল্ট অ্যাডমিন বা লোকাল স্টোরেজ ইউজার ডেটা
     let dbUsers = JSON.parse(localStorage.getItem('pos_users')) || {
-        // ডিফল্ট অ্যাডমিন-এসাইনড ডেমো অ্যাকাউন্ট (যাতে টেস্ট করা সহজ হয়)
-        "merchant01": {
-            username: "merchant01",
-            email: "merchant01@example.com",
-            password: "Password@123",
-            company: "Daily Mart",
-            category: "Retail & E-commerce",
-            inventory: [],
-            statements: [],
-            vouchers: [],
-            address: "Khulna, Bangladesh",
-            helpline: "+8801700000000",
-            dp: "",
-            documents: []
+        "admin": {
+            "username": "admin",
+            "email": "admin@pospro.com",
+            "password": "admin123",
+            "company": "My Business Outlet",
+            "category": "Retail & General Store",
+            "inventory": [],
+            "statements": [],
+            "vouchers": [],
+            "address": "Khulna, Bangladesh",
+            "helpline": "+8801700000000",
+            "dp": "",
+            "documents": []
         }
     };
+
     let cart = [];
     let tempProfileDpBase64 = "";
+
+    let forgotPasswordOTP = "";
+    let forgotEmailAccount = "";
 
     let barcodeBuffer = '';
     let lastKeyTime = Date.now();
@@ -65,9 +70,20 @@ const POSApp = (function() {
 
     return {
         init: function() {
-            saveToLocalStorage(); // সিঙ্ক নিশ্চিত করতে
+            saveToLocalStorage(); // নিশ্চিত করার জন্য যে ডিফল্ট অ্যাডমিন লোড হয়েছে
             this.checkAutoLogin();
             this.initBarcodeScannerListener();
+        },
+
+        showAuthScreen: function(screenId) {
+            document.getElementById('login-card').classList.add('hidden');
+            document.getElementById('forgot-card').classList.add('hidden');
+            document.getElementById(screenId).classList.remove('hidden');
+
+            if(screenId === 'forgot-card') {
+                document.getElementById('forgot-form-step1').classList.remove('hidden');
+                document.getElementById('forgot-form-step2').classList.add('hidden');
+            }
         },
 
         togglePasswordVisibility: function(inputId) {
@@ -75,17 +91,55 @@ const POSApp = (function() {
             input.type = input.type === "password" ? "text" : "password";
         },
 
+        sendForgotOTP: function() {
+            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+            const userEntry = Object.values(dbUsers).find(u => u.email === email);
+
+            if (!userEntry) {
+                alert('No registered account found with this email!');
+                return;
+            }
+
+            forgotEmailAccount = email;
+            forgotPasswordOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+            alert(`[EMAIL INBOX SIMULATION]\n\nPassword recovery requested for ${email}.\nYour Reset OTP is: ${forgotPasswordOTP}`);
+
+            document.getElementById('forgot-email-display').innerText = email;
+            document.getElementById('forgot-form-step1').classList.add('hidden');
+            document.getElementById('forgot-form-step2').classList.remove('hidden');
+        },
+
+        resetPassword: function() {
+            const enteredOTP = document.getElementById('forgot-otp-input').value.trim();
+            const newPassword = document.getElementById('forgot-new-password').value;
+
+            if (enteredOTP !== forgotPasswordOTP) {
+                alert('Invalid Reset OTP code!');
+                return;
+            }
+
+            const username = Object.keys(dbUsers).find(key => dbUsers[key].email === forgotEmailAccount);
+            if (username && dbUsers[username]) {
+                dbUsers[username].password = newPassword;
+                saveToLocalStorage();
+                alert('Password reset successful! Please login.');
+                this.showAuthScreen('login-card');
+            }
+        },
+
         handleLogin: function() {
-            const usernameInput = document.getElementById('login-username').value.trim();
+            const userOrEmail = document.getElementById('login-username').value.trim().toLowerCase();
             const pass = document.getElementById('login-password').value;
 
-            // অ্যাডমিন প্যানেল থেকে এসাইন করা ইউজারনেম এবং পাসওয়ার্ড যাচাই
-            if (dbUsers[usernameInput] && dbUsers[usernameInput].password === pass) {
-                activeUser = usernameInput;
+            const usernameKey = Object.keys(dbUsers).find(u => u.toLowerCase() === userOrEmail || (dbUsers[u].email && dbUsers[u].email.toLowerCase() === userOrEmail));
+
+            if (usernameKey && dbUsers[usernameKey].password === pass) {
+                activeUser = usernameKey;
                 localStorage.setItem('pos_active_user', activeUser);
                 this.loadApplication();
             } else { 
-                alert('Invalid Username or Password! Please use credentials provided by Admin.'); 
+                alert('Invalid authentication credentials or account not created by Admin!'); 
             }
         },
 
@@ -102,6 +156,7 @@ const POSApp = (function() {
             localStorage.removeItem('pos_active_user');
             document.getElementById('app-container').classList.add('hidden');
             document.getElementById('auth-container').classList.remove('hidden');
+            this.showAuthScreen('login-card');
         },
 
         loadApplication: function() {
@@ -639,7 +694,9 @@ const POSApp = (function() {
         initBarcodeScannerListener: function() {
             const self = this;
             window.addEventListener('keydown', function(e) {
-                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+                if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+                    if (document.activeElement.id === 'forgot-otp-input') return;
+                }
 
                 const currentTime = Date.now();
                 if (currentTime - lastKeyTime > 50) barcodeBuffer = '';
@@ -806,156 +863,3 @@ const POSApp = (function() {
                 return; 
             }
             const barcode = skuInput ? skuInput : "SKU" + Math.floor(10000 + Math.random() * 90000);
-
-            dbUsers[activeUser].inventory.push({ name, qty, unit, buy, sell, discount, vat, gift, barcode, minStock });
-            saveToLocalStorage();
-            this.renderInventory();
-            
-            document.getElementById('inv-name').value = ''; 
-            document.getElementById('inv-sku').value = ''; 
-            document.getElementById('inv-qty').value = '';
-            document.getElementById('inv-buy').value = ''; 
-            document.getElementById('inv-sell').value = '';
-            document.getElementById('inv-discount').value = '0'; 
-            document.getElementById('inv-vat').value = '0'; 
-            document.getElementById('inv-gift').value = '';
-            document.getElementById('inv-min-stock').value = '5';
-        },
-
-        downloadBarcodeImage: function(barcodeValue) {
-            const svg = document.getElementById(`barcode-${barcodeValue}`);
-            if(!svg) return;
-            const svgString = new XMLSerializer().serializeToString(svg);
-            const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-            
-            const canvas = document.createElement("canvas");
-            const ctx = canvas.getContext("2d");
-            const img = new Image();
-            
-            img.onload = function() {
-                canvas.width = img.width + 20;
-                canvas.height = img.height + 30;
-                ctx.fillStyle = "white";
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(img, 10, 10);
-                
-                ctx.fillStyle = "black";
-                ctx.font = "bold 12px monospace";
-                ctx.textAlign = "center";
-                ctx.fillText(barcodeValue, canvas.width / 2, canvas.height - 8);
-                
-                const a = document.createElement("a");
-                a.download = `Barcode-${barcodeValue}.png`;
-                a.href = canvas.toDataURL("image/png");
-                a.click();
-            };
-            img.src = URL.createObjectURL(svgBlob);
-        },
-
-        processFinalInvoice: function() {
-            if (cart.length === 0) { alert('Cart is currently empty!'); return; }
-            const payMethod = document.getElementById('bill-pay-method').value;
-            const receiveStatus = document.getElementById('bill-receive-status').value;
-            let paidAmount = parseFloat(document.getElementById('bill-paid-input').value) || 0;
-            const totalBill = cart.reduce((sum, item) => sum + item.total, 0);
-
-            if (receiveStatus === 'Unpaid') paidAmount = 0;
-            const dueAmount = Math.max(0, totalBill - paidAmount);
-
-            cart.forEach(item => { 
-                if(dbUsers[activeUser].inventory[item.inventoryIndex]) {
-                    dbUsers[activeUser].inventory[item.inventoryIndex].qty -= item.qty; 
-                }
-            });
-
-            const newStatement = {
-                date: new Date().toLocaleString().split(',')[0], total: totalBill, paid: paidAmount, due: dueAmount,
-                method: receiveStatus === 'Unpaid' ? 'Unpaid Ledger' : payMethod
-            };
-            dbUsers[activeUser].statements.push(newStatement);
-            saveToLocalStorage();
-
-            const shopProfile = dbUsers[activeUser];
-            document.getElementById('bill-shop-name').innerText = shopProfile.company;
-            document.getElementById('bill-shop-cat').innerText = shopProfile.category || "Retail Counter";
-            document.getElementById('bill-shop-address').innerText = shopProfile.address || "";
-            document.getElementById('bill-shop-helpline').innerText = shopProfile.helpline ? `Helpline: ${shopProfile.helpline}` : "";
-            document.getElementById('bill-date').innerText = newStatement.date;
-            document.getElementById('bill-payment-type').innerText = newStatement.method;
-
-            const tbody = document.getElementById('bill-items-body');
-            tbody.innerHTML = '';
-            let totalDiscountCalculated = 0, totalVatCalculated = 0;
-
-            cart.forEach(item => {
-                totalDiscountCalculated += (item.rawDiscount * item.qty);
-                totalVatCalculated += ((item.rawSell - item.rawDiscount) * (item.rawVat / 100) * item.qty);
-                tbody.innerHTML += `
-                    <tr class="border-b border-slate-200">
-                        <td class="py-1 text-left">${escapeHTML(item.name)}<br><span class="text-[9px] text-slate-500">${item.gift ? '*Gift: '+escapeHTML(item.gift) : ''}</span></td>
-                        <td class="py-1 text-right">${item.qty} ${escapeHTML(item.unit)}</td>
-                        <td class="py-1 text-right">${item.rawSell.toFixed(2)}</td>
-                        <td class="py-1 text-right">${item.total.toFixed(2)}</td>
-                    </tr>`;
-            });
-
-            document.getElementById('bill-total-price').innerHTML = `
-                <div>Total Discount: -${totalDiscountCalculated.toFixed(2)} TK</div>
-                <div>Total VAT: +${totalVatCalculated.toFixed(2)} TK</div>
-                <div class="text-xs font-bold text-black border-t border-dotted border-black pt-1 mt-1">Grand Total: ${totalBill.toFixed(2)} TK</div>`;
-            
-            document.getElementById('bill-paid-price').innerText = paidAmount.toFixed(2);
-            document.getElementById('bill-due-price').innerText = dueAmount.toFixed(2);
-
-            cart = []; 
-            this.renderCart(); 
-            this.renderInventory(); 
-            this.renderStatements();
-
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('print-area').classList.remove('hidden');
-        },
-
-        closeInvoiceView: function() {
-            document.getElementById('print-area').classList.add('hidden');
-            document.getElementById('app-container').classList.remove('hidden');
-        },
-
-        renderStatements: function() {
-            const statements = dbUsers[activeUser].statements || [];
-            const tbody = document.getElementById('statement-table-body');
-            tbody.innerHTML = '';
-            let s=0, r=0, d=0;
-            statements.forEach(st => {
-                s+=st.total; r+=st.paid; d+=st.due;
-                tbody.innerHTML += `
-                    <tr class="text-sm">
-                        <td class="p-4">${escapeHTML(st.date)}</td>
-                        <td class="p-4 font-bold">${st.total.toFixed(2)} TK</td>
-                        <td class="p-4 text-emerald-600">${st.paid.toFixed(2)} TK</td>
-                        <td class="p-4 text-rose-500">${st.due.toFixed(2)} TK</td>
-                        <td class="p-4"><span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-100">${escapeHTML(st.method)}</span></td>
-                    </tr>`;
-            });
-            document.getElementById('widget-total-sales').innerText = `${s.toFixed(2)} TK`;
-            document.getElementById('widget-total-received').innerText = `${r.toFixed(2)} TK`;
-            document.getElementById('widget-total-due').innerText = `${d.toFixed(2)} TK`;
-        },
-
-        handleDownloadCSV: function() {
-            let csv = 'Timestamp,Gross Total,Paid Amount,Due,Method\n';
-            (dbUsers[activeUser].statements || []).forEach(st => { 
-                csv += `"${st.date}",${st.total},${st.paid},${st.due},"${st.method}"\n`; 
-            });
-            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;' });
-            const lnk = document.createElement("a"); 
-            lnk.href = URL.createObjectURL(blob); 
-            lnk.download = 'Statement.csv'; 
-            lnk.click();
-        }
-    };
-})();
-
-window.addEventListener('DOMContentLoaded', () => {
-    POSApp.init();
-});
