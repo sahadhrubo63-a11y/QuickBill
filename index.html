@@ -6,8 +6,8 @@
     <title>Business POS & Inventory Pro Suite</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Inter Font & Monospace Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <!-- JsBarcode CDN -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <!-- html2pdf.js for PDF Generation -->
@@ -20,77 +20,166 @@
     #print-area { display: block !important; width: 100%; position: absolute; top: 0; left: 0; background: white; z-index: 9999; }
 }
 body { font-family: 'Inter', sans-serif; }
+
+/* Thermal Printer & Loader Custom Animations */
+.font-mono-receipt { font-family: 'Space Mono', monospace; }
+
+@keyframes printOut {
+    0% {
+        max-height: 0px;
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        max-height: 650px;
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.animate-printer-paper {
+    animation: printOut 2.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { opacity: 0.3; transform: scale(0.98); }
+    50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+.animate-glow {
+    animation: pulseGlow 2s infinite ease-in-out;
+}
 </style>
 </head>
-<body class="bg-slate-50 text-slate-800 flex flex-col min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-950 text-slate-800 flex flex-col min-h-screen antialiased selection:bg-indigo-500 selection:text-white overflow-x-hidden">
 
-    <!-- AUTHENTICATION CONTAINER -->
-    <div id="auth-container" class="flex-grow flex items-center justify-center p-4">
-        
-        <!-- LOGIN CARD -->
-        <div id="login-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 transition-all">
-            <div class="text-center mb-8">
-                <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">POS PRO v5.0</span>
-                <h2 class="text-3xl font-bold text-slate-900 mt-2">Sign In</h2>
-                <p class="text-sm text-slate-500 mt-1">Access your business dashboard</p>
-            </div>
-            <form onsubmit="event.preventDefault(); POSApp.handleLogin();" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username / Email</label>
-                    <input type="text" id="login-username" required class="w-full border border-slate-200 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="Username or Email">
+    <!-- INITIAL ADVANCEDMANAGER SPLASH LOADER -->
+    <div id="advancedmanager-loader" class="fixed inset-0 z-50 bg-slate-950 flex flex-col items-center justify-center transition-opacity duration-700">
+        <div class="relative flex flex-col items-center">
+            <!-- Glowing background aura -->
+            <div class="absolute w-40 h-40 bg-indigo-600/30 rounded-full blur-3xl animate-glow"></div>
+            
+            <!-- Animated Spinner Rings -->
+            <div class="relative w-24 h-24 mb-6">
+                <div class="absolute inset-0 rounded-full border-4 border-indigo-500/20"></div>
+                <div class="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+                <div class="absolute inset-2 rounded-full border-4 border-emerald-400 border-b-transparent animate-spin" style="animation-duration: 1.5s; animation-direction: reverse;"></div>
+                <div class="absolute inset-0 flex items-center justify-center font-bold text-indigo-400 text-xl tracking-tighter">
+                    POS
                 </div>
-                <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-semibold text-slate-600 uppercase">Password</label>
-                        <button type="button" onclick="POSApp.showAuthScreen('forgot-card')" class="text-xs text-indigo-600 font-semibold hover:underline">Forgot Password?</button>
-                    </div>
-                    <div class="relative">
-                        <input type="password" id="login-password" required class="w-full border border-slate-200 p-3 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" placeholder="••••••••">
-                        <button type="button" onclick="POSApp.togglePasswordVisibility('login-password')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">👁️</button>
-                    </div>
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-200 interactive-hover">Login</button>
-            </form>
-            <div class="text-center mt-6">
-                <p class="text-xs text-slate-400">Note: Account credentials are provided by Administrator.</p>
             </div>
-        </div>
 
-        <!-- FORGOT PASSWORD CARD -->
-        <div id="forgot-card" class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md border border-slate-100 hidden transition-all">
-            <div class="text-center mb-6">
-                <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Account Recovery</span>
-                <h2 class="text-3xl font-bold text-slate-900 mt-2">Reset Password</h2>
-            </div>
-            <form id="forgot-form-step1" onsubmit="event.preventDefault(); POSApp.sendForgotOTP();" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Registered Email Address</label>
-                    <input type="email" id="forgot-email" required class="w-full border border-slate-200 p-3 rounded-lg text-sm" placeholder="name@company.com">
-                </div>
-                <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm">Send Reset OTP</button>
-            </form>
-            <form id="forgot-form-step2" onsubmit="event.preventDefault(); POSApp.resetPassword();" class="space-y-3 hidden">
-                <div class="bg-amber-50 border border-amber-100 p-3 rounded-lg text-center">
-                    <p class="text-xs text-amber-800">OTP code sent to <strong id="forgot-email-display"></strong></p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Enter 6-Digit OTP</label>
-                    <input type="text" id="forgot-otp-input" maxlength="6" required class="w-full border border-slate-200 p-2.5 rounded-lg text-center font-mono text-lg tracking-widest font-bold" placeholder="000000">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">New Strong Password</label>
-                    <input type="password" id="forgot-new-password" required class="w-full border border-slate-200 px-3 py-2 rounded-lg text-sm" placeholder="••••••••">
-                </div>
-                <button type="submit" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm">Update Password</button>
-            </form>
-            <div class="text-center mt-4">
-                <button onclick="POSApp.showAuthScreen('login-card')" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Login</button>
-            </div>
+            <!-- Title & Subtitle -->
+            <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-wider flex items-center gap-2">
+                Advanced<span class="text-indigo-500">Manager</span>
+            </h1>
+            <p class="text-xs text-slate-400 mt-2 font-mono tracking-widest uppercase flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> Initializing POS Suite...
+            </p>
         </div>
     </div>
 
+    <!-- AUTHENTICATION CONTAINER -->
+    <div id="auth-container" class="flex-grow flex items-center justify-center p-4 relative min-h-screen bg-slate-950">
+        
+        <!-- THERMAL PRINTER HARDWARE GRAPHIC & RECEIPT CONTAINER -->
+        <div id="printer-wrapper" class="hidden flex-col items-center w-full max-w-md my-auto py-8">
+            
+            <!-- Printer Top Body Hardware -->
+            <div class="w-full bg-slate-900 border-2 border-slate-800 rounded-t-2xl p-4 shadow-2xl relative z-20 flex flex-col items-center">
+                <div class="w-full flex justify-between items-center mb-2 px-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-[10px] font-mono text-emerald-400 tracking-wider font-bold">READY TO PRINT</span>
+                    </div>
+                    <span class="text-[10px] font-mono text-slate-400 font-semibold">THERMAL PRINTER v5.0</span>
+                </div>
+                <!-- Paper Ejection Slot Cutout -->
+                <div class="w-full h-3 bg-slate-950 rounded-full border border-slate-800 shadow-inner"></div>
+            </div>
+
+            <!-- EJECTING RECEIPT PAPER (LOGIN CARD INSIDE) -->
+            <div id="printable-login-paper" class="w-[94%] bg-white text-slate-900 shadow-2xl rounded-b-2xl overflow-hidden border-x border-b border-slate-300 font-mono-receipt relative z-10 transition-all duration-300">
+                
+                <!-- Receipt Header (Print Simulation Top) -->
+                <div class="p-6 pb-4 text-center border-b border-dashed border-slate-400 bg-slate-50">
+                    <div class="inline-block bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase mb-2">POS PRO v5.0</div>
+                    <h2 class="text-2xl font-bold text-slate-900 tracking-tight font-sans">Business Sign In</h2>
+                    <p class="text-xs text-slate-500 mt-1 font-sans">Access your merchant dashboard</p>
+                    <div class="text-[10px] text-slate-400 mt-2">====================================</div>
+                </div>
+
+                <!-- LOGIN CARD FORM -->
+                <div id="login-card" class="p-6 sm:p-8 space-y-4 font-sans">
+                    <form onsubmit="event.preventDefault(); POSApp.handleLogin();" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Username / Email</label>
+                            <input type="text" id="login-username" required class="w-full border border-slate-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm bg-slate-50 focus:bg-white" placeholder="Username or Email">
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-xs font-semibold text-slate-600 uppercase">Password</label>
+                                <button type="button" onclick="POSApp.showAuthScreen('forgot-card')" class="text-xs text-indigo-600 font-semibold hover:underline">Forgot Password?</button>
+                            </div>
+                            <div class="relative">
+                                <input type="password" id="login-password" required class="w-full border border-slate-300 p-3 pr-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-sm bg-slate-50 focus:bg-white" placeholder="••••••••">
+                                <button type="button" onclick="POSApp.togglePasswordVisibility('login-password')" class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">👁️</button>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md shadow-indigo-200 text-sm">Login to System</button>
+                    </form>
+                    <div class="text-center mt-4 pt-4 border-t border-dashed border-slate-300">
+                        <p class="text-[11px] text-slate-400 font-mono">Credentials provided by Administrator.</p>
+                    </div>
+                </div>
+
+                <!-- FORGOT PASSWORD CARD INSIDE RECEIPT -->
+                <div id="forgot-card" class="p-6 sm:p-8 space-y-4 font-sans hidden">
+                    <div class="text-center mb-4">
+                        <span class="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-xs font-bold tracking-wider uppercase">Account Recovery</span>
+                        <h3 class="text-xl font-bold text-slate-900 mt-2">Reset Password</h3>
+                    </div>
+                    <form id="forgot-form-step1" onsubmit="event.preventDefault(); POSApp.sendForgotOTP();" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Registered Email Address</label>
+                            <input type="email" id="forgot-email" required class="w-full border border-slate-300 p-3 rounded-lg text-sm" placeholder="name@company.com">
+                        </div>
+                        <button type="submit" class="w-full bg-amber-600 text-white p-3 rounded-lg font-semibold hover:bg-amber-700 transition text-sm">Send Reset OTP</button>
+                    </form>
+                    <form id="forgot-form-step2" onsubmit="event.preventDefault(); POSApp.resetPassword();" class="space-y-3 hidden">
+                        <div class="bg-amber-50 border border-amber-100 p-3 rounded-lg text-center">
+                            <p class="text-xs text-amber-800">OTP code sent to <strong id="forgot-email-display"></strong></p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Enter 6-Digit OTP</label>
+                            <input type="text" id="forgot-otp-input" maxlength="6" required class="w-full border border-slate-300 p-2.5 rounded-lg text-center font-mono text-lg tracking-widest font-bold" placeholder="000000">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">New Strong Password</label>
+                            <input type="password" id="forgot-new-password" required class="w-full border border-slate-300 px-3 py-2 rounded-lg text-sm" placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg font-semibold hover:bg-indigo-700 transition text-sm">Update Password</button>
+                    </form>
+                    <div class="text-center mt-4">
+                        <button onclick="POSApp.showAuthScreen('login-card')" class="text-xs text-indigo-600 font-semibold hover:underline">← Back to Login</button>
+                    </div>
+                </div>
+
+                <!-- Receipt Bottom Cut Line -->
+                <div class="bg-slate-100 border-t border-dashed border-slate-400 py-2 text-center text-[10px] text-slate-400 font-mono uppercase tracking-widest">
+                    *** BuildFace Innovation ***
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
     <!-- MAIN APP WRAPPER -->
-    <div id="app-container" class="hidden flex-grow flex flex-col md:flex-row">
+    <div id="app-container" class="hidden flex-grow flex flex-col md:flex-row bg-slate-50">
         <!-- SIDEBAR NAVIGATION -->
         <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 no-print">
             <div class="p-6 border-b border-slate-800 flex items-center space-x-3">
@@ -175,7 +264,7 @@ body { font-family: 'Inter', sans-serif; }
                                         </div>
                                     </div>
                                     <div class="sm:col-span-3 flex items-end">
-                                        <button onclick="POSApp.addToCart()" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Add to Cart</button>
+                                        <button onclick="POSApp.addToCart()" class="w-full bg-indigo-600 text-white p-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Add to Cart</button>
                                     </div>
                                 </div>
 
@@ -243,7 +332,7 @@ body { font-family: 'Inter', sans-serif; }
                                     <div class="flex justify-between text-slate-600"><span>Total VAT:</span><span id="summary-vat" class="font-bold text-amber-600">0.00 TK</span></div>
                                     <div class="flex justify-between text-lg text-indigo-600 font-bold border-t pt-2"><span>Grand Total:</span><span id="summary-total">0.00 TK</span></div>
                                 </div>
-                                <button onclick="POSApp.processFinalInvoice()" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg text-center interactive-hover">Create Bill</button>
+                                <button onclick="POSApp.processFinalInvoice()" class="w-full bg-emerald-600 text-white p-3.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg text-center">Create Bill</button>
                             </div>
                         </div>
                     </div>
@@ -305,7 +394,7 @@ body { font-family: 'Inter', sans-serif; }
                             </div>
                         </div>
                         <div class="flex justify-end">
-                            <button onclick="POSApp.handleSaveProduct()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Save Product & Build Barcode</button>
+                            <button onclick="POSApp.handleSaveProduct()" class="bg-indigo-600 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Save Product & Build Barcode</button>
                         </div>
                     </div>
 
@@ -340,7 +429,7 @@ body { font-family: 'Inter', sans-serif; }
                             <h1 class="text-2xl font-bold text-slate-900">Financial Ledger</h1>
                             <p class="text-sm text-slate-500">View performance parameters and download system audits</p>
                         </div>
-                        <button onclick="POSApp.handleDownloadCSV()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition flex items-center space-x-2 interactive-hover">
+                        <button onclick="POSApp.handleDownloadCSV()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-emerald-700 transition flex items-center space-x-2">
                             <span>📥</span> <span>Download CSV Statement</span>
                         </button>
                     </div>
@@ -383,7 +472,7 @@ body { font-family: 'Inter', sans-serif; }
                             <h1 class="text-2xl font-bold text-slate-900">Voucher & Challan Center</h1>
                             <p class="text-sm text-slate-500">Create, search, filter, print and download PDF vouchers and challans</p>
                         </div>
-                        <button onclick="POSApp.openVoucherModal()" class="bg-indigo-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition flex items-center space-x-2 interactive-hover">
+                        <button onclick="POSApp.openVoucherModal()" class="bg-indigo-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition flex items-center space-x-2">
                             <span>➕</span> <span>Create New Voucher / Challan</span>
                         </button>
                     </div>
@@ -482,7 +571,7 @@ body { font-family: 'Inter', sans-serif; }
                             </div>
                         </div>
 
-                        <button onclick="POSApp.saveProfileConfiguration()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition interactive-hover">Save Settings</button>
+                        <button onclick="POSApp.saveProfileConfiguration()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition">Save Settings</button>
                     </div>
                 </div>
             </div>
@@ -691,9 +780,35 @@ const POSApp = (function() {
         }
     }
 
+    // ANIMATED THERMAL PRINTER INITIALIZATION SEQUENCE
+    function triggerPrinterSequence() {
+        const loader = document.getElementById('advancedmanager-loader');
+        const printerWrapper = document.getElementById('printer-wrapper');
+        const paper = document.getElementById('printable-login-paper');
+
+        // Step 1: Hide AdvancedManager Loader with Fade Out after 1.8s
+        setTimeout(() => {
+            if (loader) {
+                loader.classList.add('opacity-0');
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                }, 700);
+            }
+
+            // Step 2: Show Thermal Printer Hardware & Trigger Printing Effect
+            if (printerWrapper && paper) {
+                printerWrapper.classList.remove('hidden');
+                printerWrapper.classList.add('flex');
+                paper.classList.add('animate-printer-paper');
+                playBeepSound();
+            }
+        }, 1800);
+    }
+
     return {
         init: function() {
             saveToLocalStorage();
+            triggerPrinterSequence();
             this.checkAutoLogin();
             this.initBarcodeScannerListener();
         },
